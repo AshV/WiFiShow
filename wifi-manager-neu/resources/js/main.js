@@ -22,7 +22,7 @@ Neutralino.events.on("windowClose", () => {
 document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('refreshBtn').addEventListener('click', loadNetworks);
   document.getElementById('searchInput').addEventListener('input', filterNetworks);
-  document.getElementById('closeModalBtn').addEventListener('click', closeModal);
+  document.getElementById('closeModalIconBtn').addEventListener('click', closeModal);
   document.getElementById('exportBtn').addEventListener('click', exportNetworks);
   
   document.getElementById('toggleAllBtn').addEventListener('click', (e) => {
@@ -248,10 +248,10 @@ function renderNetworks(networks) {
     };
     actions.appendChild(detailsBtn);
 
-    const sep = document.createElement('div');
-    sep.style.width = '1px';
-    sep.style.height = '18px';
-    sep.style.background = 'rgba(255,255,255,0.1)';
+      const sep = document.createElement('div');
+      sep.style.width = '1px';
+      sep.style.height = '16px';
+      sep.style.background = 'var(--sep-color)';
     sep.style.margin = '0 0.5rem';
     actions.appendChild(sep);
 
