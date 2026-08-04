@@ -17,6 +17,7 @@
     "app.*",
     "os.*",
     "clipboard.*",
+    "filesystem.*",
     "debug.log"
   ],
   "globalVariables": {
@@ -36,7 +37,7 @@
       "title": "wifi-manager-neu",
       "width": 800,
       "height": 500,
-      "minWidth": 400,
+      "minWidth": 405,
       "minHeight": 200,
       "center": true,
       "fullScreen": false,

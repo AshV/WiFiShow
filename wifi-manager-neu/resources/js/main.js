@@ -1,4 +1,5 @@
 let allNetworks = [];
+let isAllMasked = true;
 
 const icons = {
   lock: '<svg class="icon-svg" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0110 0v4"></path></svg>',
@@ -9,7 +10,7 @@ const icons = {
   copy: '<svg class="icon-svg" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"></path></svg>',
   info: '<svg class="icon-svg" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>',
   trash: '<svg class="icon-svg" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>',
-  qr: '<svg class="icon-svg" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>'
+  qr: '<svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="5" height="5" x="3" y="3" rx="1"/><rect width="5" height="5" x="16" y="3" rx="1"/><rect width="5" height="5" x="3" y="16" rx="1"/><path d="M21 16h-3a2 2 0 0 0-2 2v3"/><path d="M21 21v.01"/><path d="M12 7v3a2 2 0 0 1-2 2H7"/><path d="M3 12h.01"/><path d="M12 3h.01"/><path d="M12 16v.01"/><path d="M16 12h1"/><path d="M21 12v.01"/><path d="M12 21v-1"/></svg>'
 };
 
 Neutralino.init();
@@ -22,7 +23,21 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('refreshBtn').addEventListener('click', loadNetworks);
   document.getElementById('searchInput').addEventListener('input', filterNetworks);
   document.getElementById('closeModalBtn').addEventListener('click', closeModal);
+  document.getElementById('exportBtn').addEventListener('click', exportNetworks);
   
+  document.getElementById('toggleAllBtn').addEventListener('click', (e) => {
+    isAllMasked = !isAllMasked;
+    const btn = e.currentTarget;
+    btn.innerHTML = `
+      ${isAllMasked ? icons.eye : icons.eyeOff}
+      <span>${isAllMasked ? "Show All" : "Hide All"}</span>
+    `;
+    allNetworks.forEach(net => {
+      net.isMasked = isAllMasked;
+    });
+    filterNetworks(); // Re-render to update
+  });
+
   // Shortcut Ctrl+F
   document.addEventListener('keydown', (e) => {
     if (e.ctrlKey && e.key === 'f') {
@@ -42,69 +57,6 @@ async function runCmd(cmd) {
     return result.stdOut;
 }
 
-async function getWifiProfiles() {
-    const stdout = await runCmd('netsh wlan show profiles');
-    const profiles = [];
-    const lines = stdout.split('\n');
-    for (let line of lines) {
-        if (line.includes('All User Profile')) {
-            const parts = line.split(':');
-            if (parts.length > 1) {
-                profiles.push(parts[1].trim());
-            }
-        }
-    }
-    return profiles;
-}
-
-async function getWifiDetails(profile) {
-    try {
-        const stdout = await runCmd(`netsh wlan show profile name="${profile}" key=clear`);
-        
-        let password = "";
-        let authType = "";
-        let securityKey = "";
-        let isAuto = false;
-
-        const lines = stdout.split('\n');
-        for (let line of lines) {
-            const trimmed = line.trim();
-            if (trimmed.startsWith("Authentication")) {
-                authType = trimmed.split(':')[1].trim();
-            } else if (trimmed.startsWith("Security key")) {
-                securityKey = trimmed.split(':')[1].trim();
-            } else if (trimmed.startsWith("Key Content")) {
-                password = trimmed.split(':')[1].trim();
-            } else if (trimmed.startsWith("Connection mode")) {
-                isAuto = trimmed.split(':')[1].trim() === "Connect automatically";
-            }
-        }
-
-        let finalPassword = password;
-        if (!password) {
-            if (authType.includes("Open")) finalPassword = "Open Network (No Password)";
-            else if (authType.includes("Enterprise")) finalPassword = "Enterprise Network (Username/Cert)";
-            else if (securityKey === "Present") finalPassword = "Requires Admin Rights";
-            else if (securityKey === "Absent") finalPassword = "Password Not Saved";
-            else finalPassword = "Unknown Status";
-        }
-        
-        return {
-            password: finalPassword,
-            isAuto: isAuto,
-            authType: authType,
-            hasRealPassword: !!password
-        };
-    } catch (e) {
-        return {
-            password: "Error reading password",
-            isAuto: false,
-            authType: "",
-            hasRealPassword: false
-        };
-    }
-}
-
 async function loadNetworks() {
   const loading = document.getElementById('loading');
   const list = document.getElementById('networkList');
@@ -115,12 +67,63 @@ async function loadNetworks() {
   allNetworks = [];
 
   try {
-    const profiles = await getWifiProfiles();
+    const tempDir = await Neutralino.os.getEnv("TEMP");
+    const exportFolder = `${tempDir}\\wifi-export-neu`;
     
-    for (const profile of profiles) {
-      const details = await getWifiDetails(profile);
-      allNetworks.push({ profile, ...details });
+    // Create folder if not exists
+    await runCmd(`powershell -Command "New-Item -ItemType Directory -Force -Path '${exportFolder}'"`);
+    
+    // Export all profiles as XML
+    await runCmd(`netsh wlan export profile folder="${exportFolder}" key=clear`);
+    
+    // Read the directory
+    const files = await Neutralino.filesystem.readDirectory(exportFolder);
+    
+    for (let file of files) {
+      if (file.type === 'FILE' && file.entry.endsWith('.xml')) {
+         const xmlContent = await Neutralino.filesystem.readFile(`${exportFolder}\\${file.entry}`);
+         
+         const parser = new DOMParser();
+         const xmlDoc = parser.parseFromString(xmlContent, "text/xml");
+         
+         const getTag = (tag) => {
+             const el = xmlDoc.getElementsByTagName(tag)[0];
+             return el ? el.textContent : "";
+         };
+         
+         const name = getTag("name");
+         const connectionMode = getTag("connectionMode"); // auto or manual
+         const authentication = getTag("authentication"); // WPA2PSK, open, etc.
+         const keyMaterial = getTag("keyMaterial"); // password
+         
+         let password = keyMaterial;
+         let authType = authentication;
+         let isAuto = (connectionMode === "auto");
+         
+         let finalPassword = password;
+         if (!password) {
+             if (authType.toLowerCase().includes("open")) finalPassword = "Open Network (No Password)";
+             else if (authType.toLowerCase().includes("enterprise")) finalPassword = "Enterprise Network (Username/Cert)";
+             else finalPassword = "Password Not Saved";
+         }
+         
+         allNetworks.push({
+             profile: name,
+             details: {
+                password: finalPassword,
+                isAuto: isAuto,
+                authType: authType,
+                hasRealPassword: !!password
+             },
+             isMasked: isAllMasked
+         });
+      }
     }
+    
+    // Cleanup temp directory
+    try {
+        await runCmd(`powershell -Command "Remove-Item -Recurse -Force '${exportFolder}'"`);
+    } catch(e) {}
     
     renderNetworks(allNetworks);
   } catch (error) {
@@ -142,72 +145,125 @@ function renderNetworks(networks) {
 
   networks.forEach(net => {
     let icon = icons.lock;
-    let isMasked = true;
-    let canUnmask = net.hasRealPassword;
     let pwdDisplay = "••••••••";
+    let canUnmask = true; 
     
-    if (net.password.includes("Open Network")) {
-      icon = icons.unlock;
-      pwdDisplay = "Open Network";
-    } else if (!net.hasRealPassword) {
-      icon = icons.warning;
-      pwdDisplay = net.password;
+    if (net.details) {
+      if (net.details.password.includes("Open Network")) {
+        icon = icons.unlock;
+        pwdDisplay = "Open Network";
+      } else if (!net.details.hasRealPassword) {
+        icon = icons.warning;
+        pwdDisplay = net.details.password;
+      } else {
+        pwdDisplay = net.isMasked ? "••••••••" : net.details.password;
+      }
+      canUnmask = net.details.hasRealPassword;
     }
 
-    const row = document.createElement('div');
-    row.className = 'network-row';
+    const card = document.createElement('div');
+    card.className = 'network-card';
 
-    // Left Info
-    const info = document.createElement('div');
-    info.className = 'row-info';
-    
+    // Header
+    const header = document.createElement('div');
+    header.className = 'card-header';
     const ssid = document.createElement('div');
-    ssid.className = 'row-ssid';
+    ssid.className = 'card-ssid';
     ssid.innerHTML = `<span>${icon}</span> <span>${net.profile}</span>`;
+    header.appendChild(ssid);
+
+    // Body
+    const body = document.createElement('div');
+    body.className = 'card-body';
     
     const pwdContainer = document.createElement('div');
-    pwdContainer.className = 'row-pwd-container';
+    pwdContainer.className = 'pwd-container';
     
     const pwdLabel = document.createElement('span');
-    pwdLabel.className = 'row-pwd';
+    pwdLabel.className = 'pwd-text';
     pwdLabel.textContent = pwdDisplay;
-    
     pwdContainer.appendChild(pwdLabel);
 
     if (canUnmask) {
       const unmaskBtn = document.createElement('button');
       unmaskBtn.className = 'icon-btn';
-      unmaskBtn.innerHTML = icons.eye;
-      unmaskBtn.onclick = () => {
-        if (isMasked) {
-          pwdLabel.textContent = net.password;
-          unmaskBtn.innerHTML = icons.eyeOff;
-        } else {
-          pwdLabel.textContent = '••••••••';
-          unmaskBtn.innerHTML = icons.eye;
-        }
-        isMasked = !isMasked;
+      unmaskBtn.innerHTML = net.isMasked ? icons.eye : icons.eyeOff;
+      unmaskBtn.onclick = async () => {
+        net.isMasked = !net.isMasked;
+        filterNetworks(); 
       };
       pwdContainer.appendChild(unmaskBtn);
     }
-    
-    info.appendChild(ssid);
-    info.appendChild(pwdContainer);
+    body.appendChild(pwdContainer);
 
-    // Right Actions
+    // Footer
+    const footer = document.createElement('div');
+    footer.className = 'card-footer';
+    
     const actions = document.createElement('div');
-    actions.className = 'row-actions';
+    actions.className = 'card-actions';
+
+    // QR Code Button
+    if (net.details && net.details.hasRealPassword) {
+      const qrBtn = document.createElement('button');
+      qrBtn.className = 'icon-btn has-tooltip';
+      qrBtn.setAttribute('data-tooltip', 'Show QR Code');
+      qrBtn.innerHTML = icons.qr;
+      qrBtn.onclick = async () => {
+        const encryption = net.details.authType.toLowerCase().includes("wep") ? "WEP" : "WPA";
+        const qrString = `WIFI:S:${net.profile};T:${encryption};P:${net.details.password};;`;
+        showModal(`QR Code for ${net.profile}`, null, qrString);
+      };
+      actions.appendChild(qrBtn);
+    }
+
+    // Copy Button
+    if (net.details && net.details.hasRealPassword) {
+        const copyBtn = document.createElement('button');
+        copyBtn.className = 'icon-btn has-tooltip';
+        copyBtn.setAttribute('data-tooltip', 'Copy Password');
+        copyBtn.innerHTML = icons.copy;
+        copyBtn.onclick = async () => {
+          try {
+            await Neutralino.clipboard.writeText(net.details.password);
+            showToast('Copied to clipboard! 📋');
+          } catch (e) {
+            showToast('Failed to copy');
+          }
+        };
+        actions.appendChild(copyBtn);
+    }
+
+    const detailsBtn = document.createElement('button');
+    detailsBtn.className = 'icon-btn has-tooltip';
+    detailsBtn.setAttribute('data-tooltip', 'Details');
+    detailsBtn.innerHTML = icons.info;
+    detailsBtn.onclick = async () => {
+      try {
+        const detailsText = await runCmd(`netsh wlan show profile name="${net.profile}" key=clear`);
+        showModal(`Details for ${net.profile}`, detailsText);
+      } catch (e) {
+        showToast('Error fetching details');
+      }
+    };
+    actions.appendChild(detailsBtn);
+
+    const sep = document.createElement('div');
+    sep.style.width = '1px';
+    sep.style.height = '18px';
+    sep.style.background = 'rgba(255,255,255,0.1)';
+    sep.style.margin = '0 0.5rem';
+    actions.appendChild(sep);
 
     // Auto-Connect Toggle
-    const autoLabel = document.createElement('span');
-    autoLabel.className = 'action-label';
-    autoLabel.textContent = 'Auto-connect';
-
     const autoToggle = document.createElement('label');
-    autoToggle.className = 'toggle-switch';
+    autoToggle.className = 'toggle-switch has-tooltip';
+    autoToggle.setAttribute('data-tooltip', 'Auto-connect');
     const autoInput = document.createElement('input');
     autoInput.type = 'checkbox';
-    autoInput.checked = net.isAuto;
+    if (net.details) {
+        autoInput.checked = net.details.isAuto;
+    }
     const autoSlider = document.createElement('span');
     autoSlider.className = 'slider';
     
@@ -216,6 +272,7 @@ function renderNetworks(networks) {
       const mode = isChecked ? "auto" : "manual";
       try {
         await runCmd(`netsh wlan set profileparameter name="${net.profile}" connectionmode=${mode}`);
+        net.details.isAuto = isChecked;
         showToast(`Auto-connect ${isChecked ? 'enabled' : 'disabled'}.`);
       } catch (err) {
         showToast(`Error updating mode`);
@@ -224,59 +281,18 @@ function renderNetworks(networks) {
     };
     autoToggle.appendChild(autoInput);
     autoToggle.appendChild(autoSlider);
+    actions.appendChild(autoToggle);
 
-    // Separator
-    const sep = document.createElement('div');
-    sep.style.width = '1px';
-    sep.style.height = '20px';
-    sep.style.background = 'rgba(255,255,255,0.1)';
-    sep.style.margin = '0 0.5rem';
-
-    // QR Code Button
-    if (net.hasRealPassword) {
-      const qrBtn = document.createElement('button');
-      qrBtn.className = 'icon-btn';
-      qrBtn.title = 'Show QR Code';
-      qrBtn.innerHTML = icons.qr;
-      qrBtn.onclick = () => {
-        // WIFI:S:<SSID>;T:<WEP|WPA|blank>;P:<PASSWORD>;H:<true|false|blank>;;
-        const encryption = net.authType.includes("WEP") ? "WEP" : "WPA";
-        const qrString = `WIFI:S:${net.profile};T:${encryption};P:${net.password};;`;
-        
-        showModal(`QR Code for ${net.profile}`, null, qrString);
-      };
-      actions.appendChild(qrBtn);
-    }
-
-    const copyBtn = document.createElement('button');
-    copyBtn.className = 'icon-btn';
-    copyBtn.title = 'Copy Password';
-    copyBtn.innerHTML = icons.copy;
-    copyBtn.onclick = async () => {
-      try {
-        await Neutralino.clipboard.writeText(net.password);
-        showToast('Copied to clipboard! 📋');
-      } catch (e) {
-        showToast('Failed to copy');
-      }
-    };
-
-    const detailsBtn = document.createElement('button');
-    detailsBtn.className = 'icon-btn';
-    detailsBtn.title = 'Details';
-    detailsBtn.innerHTML = icons.info;
-    detailsBtn.onclick = async () => {
-      try {
-        const details = await runCmd(`netsh wlan show profile name="${net.profile}" key=clear`);
-        showModal(`Details for ${net.profile}`, details);
-      } catch (e) {
-        showToast('Error fetching details');
-      }
-    };
+    const sep2 = document.createElement('div');
+    sep2.style.width = '1px';
+    sep2.style.height = '18px';
+    sep2.style.background = 'rgba(255,255,255,0.1)';
+    sep2.style.margin = '0 0.5rem';
+    actions.appendChild(sep2);
 
     const forgetBtn = document.createElement('button');
-    forgetBtn.className = 'icon-btn danger';
-    forgetBtn.title = 'Forget Network';
+    forgetBtn.className = 'icon-btn danger has-tooltip';
+    forgetBtn.setAttribute('data-tooltip', 'Forget Network');
     forgetBtn.innerHTML = icons.trash;
     forgetBtn.onclick = async () => {
       if (confirm(`Are you sure you want to forget '${net.profile}'?`)) {
@@ -289,18 +305,15 @@ function renderNetworks(networks) {
         }
       }
     };
-
-    actions.appendChild(autoLabel);
-    actions.appendChild(autoToggle);
-    actions.appendChild(sep);
-    if (!net.hasRealPassword) actions.appendChild(copyBtn); // already added if hasRealPassword? wait, I didn't add it yet
-    if (net.hasRealPassword) actions.appendChild(copyBtn);
-    actions.appendChild(detailsBtn);
     actions.appendChild(forgetBtn);
 
-    row.appendChild(info);
-    row.appendChild(actions);
-    list.appendChild(row);
+    footer.appendChild(actions);
+
+    card.appendChild(header);
+    card.appendChild(body);
+    card.appendChild(footer);
+    
+    list.appendChild(card);
   });
 }
 
@@ -347,4 +360,28 @@ function showModal(title, text, qrData = null) {
 
 function closeModal() {
   document.getElementById('detailsModal').classList.add('hidden');
+}
+
+async function exportNetworks() {
+    let csv = "SSID,Password,AuthType,AutoConnect\n";
+    allNetworks.forEach(n => {
+        let p = "";
+        if (n.details && n.details.hasRealPassword) p = n.details.password;
+        csv += `"${n.profile}","${p}","${n.details ? n.details.authType : ''}","${n.details ? n.details.isAuto : ''}"\n`;
+    });
+
+    try {
+        let savePath = await Neutralino.os.showSaveDialog('Save Export', {
+            defaultPath: 'wifi-export.csv',
+            filters: [{name: 'CSV Files', extensions: ['csv']}]
+        });
+        if (savePath) {
+            await Neutralino.filesystem.writeFile(savePath, csv);
+            showToast("Export saved!");
+        } else {
+            showToast("Export cancelled.");
+        }
+    } catch(e) {
+        showToast(`Export failed: ${e}`);
+    }
 }

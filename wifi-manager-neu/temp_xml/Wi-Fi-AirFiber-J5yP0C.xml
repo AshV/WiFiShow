@@ -1,0 +1,31 @@
+<?xml version="1.0"?>
+<WLANProfile xmlns="http://www.microsoft.com/networking/WLAN/profile/v1">
+	<name>AirFiber-J5yP0C</name>
+	<SSIDConfig>
+		<SSID>
+			<hex>41697246696265722D4A3579503043</hex>
+			<name>AirFiber-J5yP0C</name>
+		</SSID>
+	</SSIDConfig>
+	<connectionType>ESS</connectionType>
+	<connectionMode>auto</connectionMode>
+	<MSM>
+		<security>
+			<authEncryption>
+				<authentication>WPA2PSK</authentication>
+				<encryption>AES</encryption>
+				<useOneX>false</useOneX>
+			</authEncryption>
+			<sharedKey>
+				<keyType>passPhrase</keyType>
+				<protected>false</protected>
+				<keyMaterial>LionaD3eigeigeey</keyMaterial>
+			</sharedKey>
+		</security>
+	</MSM>
+	<MacRandomization xmlns="http://www.microsoft.com/networking/WLAN/profile/v3">
+		<enableRandomization>true</enableRandomization>
+		<randomizeEveryday>true</randomizeEveryday>
+		<randomizationSeed>2050095095</randomizationSeed>
+	</MacRandomization>
+</WLANProfile>
