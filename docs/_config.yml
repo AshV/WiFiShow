@@ -1,9 +1,0 @@
-title: Wi-Fi Show
-description: A lightning-fast, beautiful Wi-Fi manager for Windows.
-baseurl: "/WiFiShow"
-url: "https://AshV.github.io"
-theme: jekyll-theme-cayman
-exclude:
-  - README.md
-  - Gemfile
-  - Gemfile.lock
