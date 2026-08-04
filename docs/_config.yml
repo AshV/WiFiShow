@@ -1,0 +1,8 @@
+title: Wi-Fi Show
+description: A lightning-fast, beautiful Wi-Fi manager for Windows.
+baseurl: "" # the subpath of your site, e.g. /blog
+url: "" # the base hostname & protocol for your site, e.g. http://example.com
+exclude:
+  - README.md
+  - Gemfile
+  - Gemfile.lock

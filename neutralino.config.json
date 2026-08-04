@@ -34,21 +34,21 @@
   },
   "modes": {
     "window": {
-      "title": "WiFi Show",
-      "width": 800,
-      "height": 500,
+      "title": "Wi-Fi Show",
+      "width": 1000,
+      "height": 800,
       "minWidth": 405,
       "minHeight": 200,
       "center": true,
       "fullScreen": false,
       "alwaysOnTop": false,
       "icon": "/resources/icons/appIcon.png",
-      "enableInspector": true,
+      "enableInspector": false,
       "borderless": false,
-      "maximize": false,
+      "maximize": true,
       "hidden": false,
       "resizable": true,
-      "exitProcessOnClose": false
+      "exitProcessOnClose": true
     },
     "browser": {
       "globalVariables": {
