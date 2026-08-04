@@ -1,6 +1,6 @@
 {
   "$schema": "https://raw.githubusercontent.com/neutralinojs/neutralinojs/main/schemas/neutralino.config.schema.json",
-  "applicationId": "js.neutralino.sample",
+  "applicationId": "js.neutralino.wifishow",
   "version": "1.0.0",
   "defaultMode": "window",
   "port": 0,
@@ -34,7 +34,7 @@
   },
   "modes": {
     "window": {
-      "title": "wifi-manager-neu",
+      "title": "WiFi Show",
       "width": 800,
       "height": 500,
       "minWidth": 405,
@@ -75,7 +75,7 @@
     }
   },
   "cli": {
-    "binaryName": "wifi-manager-neu",
+    "binaryName": "wifi-show-ashv",
     "resourcesPath": "/resources/",
     "extensionsPath": "/extensions/",
     "clientLibrary": "/resources/js/neutralino.js",

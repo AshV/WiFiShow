@@ -11,3 +11,9 @@ neutralino.js
 # Neutralinojs related files
 .storage
 *.log
+.tmp
+temp_xml
+
+# Installers and Certificates
+*.msix
+*.pfx
