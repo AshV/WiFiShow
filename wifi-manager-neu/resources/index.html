@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>WiFi Manager</title>
+    <link rel="stylesheet" href="css/style.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  </head>
+  <body>
+    <div class="app-container">
+      <!-- Background elements for Glassmorphism -->
+      <div class="blob blob-1"></div>
+      <div class="blob blob-2"></div>
+
+      <div class="glass-panel">
+        <header>
+          <h1>Wi-Fi Networks</h1>
+          <div class="header-actions">
+            <input type="text" id="searchInput" placeholder="Search SSID..." />
+            <button id="refreshBtn" class="btn secondary">🔄 Refresh</button>
+          </div>
+        </header>
+
+        <main>
+          <div class="list-header">
+            <span class="col-ssid">Network Name</span>
+            <span class="col-actions">Actions</span>
+          </div>
+          <div id="loading" class="loading-state hidden">
+            <div class="spinner"></div>
+            <p>Fetching networks...</p>
+          </div>
+          <div id="networkList" class="network-list">
+            <!-- Rows injected by JS -->
+          </div>
+        </main>
+      </div>
+    </div>
+    
+    <div id="toast" class="toast">Action completed!</div>
+
+    <!-- Modals -->
+    <div id="detailsModal" class="modal hidden">
+      <div class="modal-content glass-panel">
+        <h2 id="modalTitle">Details</h2>
+        <div id="qrcode" style="display: none; margin: 0 auto; padding: 1rem; background: white; border-radius: 8px;"></div>
+        <pre id="modalText"></pre>
+        <div class="modal-actions">
+          <button id="closeModalBtn" class="btn primary">Close</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- External Libraries -->
+    <script src="js/qrcode.min.js"></script>
+
+    <!-- Neutralino.js client -->
+    <script src="js/neutralino.js"></script>
+    <script src="js/main.js"></script>
+  </body>
+</html>
