@@ -1,5 +1,5 @@
 Write-Host "Building Neutralino application..."
-npx @neutralinojs/neu build
+npx @neutralinojs/neu build --embed-resources
 
 Write-Host "Renaming executables to remove architecture suffixes..."
 
