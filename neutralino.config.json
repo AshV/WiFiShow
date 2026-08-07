@@ -76,6 +76,7 @@
   },
   "cli": {
     "binaryName": "wifi-show-ashv",
+    "applicationIcon": "/resources/icons/appIcon.png",
     "resourcesPath": "/resources/",
     "extensionsPath": "/extensions/",
     "clientLibrary": "/resources/js/neutralino.js",
