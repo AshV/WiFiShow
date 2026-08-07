@@ -78,24 +78,31 @@
                         <ColumnDefinition Width="*" />
                     </Grid.ColumnDefinitions>
                     
-                    <Image Grid.Column="0" Source="pack://application:,,,/appIcon.png" Width="42" Height="42" Stretch="Uniform" RenderOptions.BitmapScalingMode="HighQuality" Margin="0,0,15,0" VerticalAlignment="Center"/>
+                    <Border Grid.Column="0" Width="40" Height="40" CornerRadius="8" ClipToBounds="True" Margin="0,0,15,0" VerticalAlignment="Center">
+                        <Image Source="pack://application:,,,/appIcon.png" Stretch="Uniform" RenderOptions.BitmapScalingMode="HighQuality" />
+                    </Border>
                     
                     <ui:TextBox Grid.Column="1" x:Name="SearchBox" HorizontalAlignment="Stretch" VerticalAlignment="Center"
+                                Height="40"
                                 PlaceholderText="Search SSID..." Icon="{ui:SymbolIcon Search24}"
                                 TextChanged="SearchBox_TextChanged" />
                 </Grid>
 
-                <StackPanel Grid.Column="1" Orientation="Horizontal">
+                <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
                     <ui:Button x:Name="ViewToggleBtn" Margin="0,0,10,0" Click="ViewToggleBtn_Click" 
+                               Height="40" Padding="12,0"
                                Icon="{ui:SymbolIcon List24}" ToolTip="Toggle View" />
                     
                     <ui:Button x:Name="ToggleAllBtn" Margin="0,0,10,0" Click="ToggleAllBtn_Click"
+                               Height="40" Padding="12,0"
                                Icon="{ui:SymbolIcon Eye24}" Content="Show All" />
                                
                     <ui:Button Margin="0,0,10,0" Click="ExportBtn_Click"
+                               Height="40" Padding="12,0"
                                Icon="{ui:SymbolIcon Save24}" Content="Export CSV" />
                                
                     <ui:Button Click="RefreshBtn_Click"
+                               Height="40" Padding="12,0"
                                Icon="{ui:SymbolIcon ArrowClockwise24}" Content="Refresh" />
                 </StackPanel>
             </Grid>
