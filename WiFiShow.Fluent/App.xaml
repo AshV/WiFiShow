@@ -9,6 +9,12 @@
                 <ui:ThemesDictionary Theme="Light" />
                 <ui:ControlsDictionary />
             </ResourceDictionary.MergedDictionaries>
+            
+            <Style TargetType="FrameworkElement">
+                <Setter Property="ToolTipService.InitialShowDelay" Value="100" />
+                <Setter Property="ToolTipService.BetweenShowDelay" Value="0" />
+                <Setter Property="ToolTipService.ShowDuration" Value="5000" />
+            </Style>
         </ResourceDictionary>
     </Application.Resources>
 </Application>

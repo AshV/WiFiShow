@@ -76,6 +76,15 @@ namespace WiFiShow.Fluent
         private ObservableCollection<WiFiProfileViewModel> _filteredProfiles = new ObservableCollection<WiFiProfileViewModel>();
         private bool _showAllPasswords = false;
 
+        public static readonly DependencyProperty CardWidthProperty =
+            DependencyProperty.Register(nameof(CardWidth), typeof(double), typeof(MainWindow), new PropertyMetadata(300.0));
+
+        public double CardWidth
+        {
+            get => (double)GetValue(CardWidthProperty);
+            set => SetValue(CardWidthProperty, value);
+        }
+
         public MainWindow()
         {
             InitializeComponent();
@@ -141,10 +150,41 @@ namespace WiFiShow.Fluent
         private void ToggleAllBtn_Click(object sender, RoutedEventArgs e)
         {
             _showAllPasswords = !_showAllPasswords;
+            ToggleAllBtn.Content = _showAllPasswords ? "Hide All" : "Show All";
+            ToggleAllBtn.Icon = new Wpf.Ui.Controls.SymbolIcon { Symbol = _showAllPasswords ? Wpf.Ui.Controls.SymbolRegular.EyeOff24 : Wpf.Ui.Controls.SymbolRegular.Eye24 };
+
             foreach (var p in _allProfiles)
             {
                 p.ShowPassword = _showAllPasswords;
             }
+        }
+
+        private void CopyPassword_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is Wpf.Ui.Controls.Button btn && btn.Tag is string pwd && !string.IsNullOrEmpty(pwd))
+            {
+                System.Windows.Clipboard.SetText(pwd);
+            }
+        }
+
+        private void ToggleSinglePassword_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is Wpf.Ui.Controls.Button btn && btn.Tag is string profileName)
+            {
+                var profile = _allProfiles.FirstOrDefault(p => p.Name == profileName);
+                if (profile != null)
+                {
+                    profile.ShowPassword = !profile.ShowPassword;
+                }
+            }
+        }
+
+        private void CardsView_SizeChanged(object sender, SizeChangedEventArgs e)
+        {
+            double totalWidth = e.NewSize.Width - 10;
+            if (totalWidth <= 0) return;
+            int columns = Math.Max(1, (int)(totalWidth / 320));
+            CardWidth = (totalWidth / columns) - 20;
         }
 
         private void RefreshBtn_Click(object sender, RoutedEventArgs e)
