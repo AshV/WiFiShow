@@ -36,6 +36,7 @@ OutputBaseFilename=WiFi Show Setup
 SolidCompression=yes
 WizardStyle=modern windows11
 OutputDir=Output
+SetupIconFile=appIcon.ico
 
 [Languages]
 Name: "english"; MessagesFile: "compiler:Default.isl"
