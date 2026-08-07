@@ -78,8 +78,8 @@
                         <ColumnDefinition Width="*" />
                     </Grid.ColumnDefinitions>
                     
-                    <Border Grid.Column="0" Width="32" Height="32" CornerRadius="8" ClipToBounds="True" Margin="0,0,15,0" VerticalAlignment="Center" Background="{DynamicResource ControlFillColorDefaultBrush}">
-                        <Image Source="pack://application:,,,/appIcon.png" Stretch="UniformToFill" RenderOptions.BitmapScalingMode="HighQuality" Margin="2" />
+                    <Border Grid.Column="0" Width="32" Height="32" CornerRadius="8" ClipToBounds="True" Margin="0,0,15,0" VerticalAlignment="Center">
+                        <Image Source="pack://application:,,,/appIcon.png" Stretch="UniformToFill" RenderOptions.BitmapScalingMode="HighQuality" />
                     </Border>
                     
                     <ui:TextBox Grid.Column="1" x:Name="SearchBox" HorizontalAlignment="Stretch" VerticalAlignment="Center"
