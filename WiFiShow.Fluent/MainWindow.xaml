@@ -75,7 +75,7 @@
                     <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
 
-                <ui:TextBox x:Name="SearchBox" Width="250" HorizontalAlignment="Left"
+                <ui:TextBox x:Name="SearchBox" Margin="0,0,24,0" HorizontalAlignment="Stretch"
                             PlaceholderText="Search SSID..." Icon="{ui:SymbolIcon Search24}"
                             TextChanged="SearchBox_TextChanged" />
 
