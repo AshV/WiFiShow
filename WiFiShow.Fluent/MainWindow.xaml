@@ -111,6 +111,7 @@
                                     BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}" 
                                     BorderThickness="1" 
                                     CornerRadius="4" 
+                                    Opacity="0.65"
                                     Width="{Binding RelativeSource={RelativeSource AncestorType=Window}, Path=CardWidth}" 
                                     Margin="10">
                                 <Grid Margin="15">
@@ -183,7 +184,7 @@
                 </Grid.RowDefinitions>
                 
                 <Grid Grid.Row="0" Margin="10,0,10,0">
-                    <Border Background="{DynamicResource CardBackgroundFillColorDefaultBrush}" Opacity="0.45" CornerRadius="4" BorderBrush="{DynamicResource DividerStrokeColorDefaultBrush}" BorderThickness="0,0,0,1" />
+                    <Border Background="{DynamicResource CardBackgroundFillColorDefaultBrush}" Opacity="0.65" CornerRadius="4" BorderBrush="{DynamicResource DividerStrokeColorDefaultBrush}" BorderThickness="0,0,0,1" />
                     <Grid Margin="15,10">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="Auto" SharedSizeGroup="IconCol" />
