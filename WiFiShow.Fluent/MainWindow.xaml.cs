@@ -314,10 +314,31 @@ namespace WiFiShow.Fluent
                         Source = BitmapToImageSource(qrImage),
                         Width = 250,
                         Height = 250,
-                        Margin = new Thickness(0,0,0,10),
+                        Margin = new Thickness(0,0,0,20),
                         HorizontalAlignment = HorizontalAlignment.Center
                     };
                     sp.Children.Add(img);
+                    
+                    var actionsSp = new StackPanel { Orientation = System.Windows.Controls.Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Center };
+                    
+                    var btnDownload = new Wpf.Ui.Controls.Button { Content = "Download", Icon = new Wpf.Ui.Controls.SymbolIcon(Wpf.Ui.Controls.SymbolRegular.Save24), Margin = new Thickness(0,0,10,0) };
+                    btnDownload.Click += (s, ev) => {
+                        var sfd = new SaveFileDialog { Filter = "PNG Image|*.png", FileName = $"{profile.Ssid}_QR.png" };
+                        if (sfd.ShowDialog() == true) {
+                            qrImage.Save(sfd.FileName, System.Drawing.Imaging.ImageFormat.Png);
+                            System.Windows.MessageBox.Show("QR Code saved successfully!", "Wi-Fi Show");
+                        }
+                    };
+                    
+                    var btnShare = new Wpf.Ui.Controls.Button { Content = "Copy Image", Icon = new Wpf.Ui.Controls.SymbolIcon(Wpf.Ui.Controls.SymbolRegular.Copy24) };
+                    btnShare.Click += (s, ev) => {
+                        System.Windows.Clipboard.SetImage((BitmapSource)img.Source);
+                        System.Windows.MessageBox.Show("QR Code image copied to clipboard!", "Wi-Fi Show");
+                    };
+
+                    actionsSp.Children.Add(btnDownload);
+                    actionsSp.Children.Add(btnShare);
+                    sp.Children.Add(actionsSp);
                 }
                 else
                 {

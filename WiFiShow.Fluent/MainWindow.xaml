@@ -126,7 +126,7 @@
                                             <ui:Button ToolTip="Show QR" Tag="{Binding Name}" Click="QRBtn_Click" 
                                                        Icon="{ui:SymbolIcon QrCode24}" Appearance="Transparent" Margin="0,0,4,0"/>
                                             <ui:Button ToolTip="Details" Tag="{Binding Name}" Click="DetailsBtn_Click" 
-                                                       Icon="{ui:SymbolIcon Document24}" Appearance="Transparent" Margin="0,0,4,0"/>
+                                                       Icon="{ui:SymbolIcon Info24}" Appearance="Transparent" Margin="0,0,4,0"/>
                                             <ui:Button ToolTip="Forget Network" Tag="{Binding Name}" Click="DeleteBtn_Click" 
                                                        Icon="{ui:SymbolIcon Delete24}" Appearance="Secondary" />
                                         </StackPanel>
@@ -216,7 +216,7 @@
                                             <ui:Button ToolTip="Show QR" Tag="{Binding Name}" Click="QRBtn_Click" 
                                                        Icon="{ui:SymbolIcon QrCode24}" Appearance="Transparent" Margin="0,0,4,0"/>
                                             <ui:Button ToolTip="Details" Tag="{Binding Name}" Click="DetailsBtn_Click" 
-                                                       Icon="{ui:SymbolIcon Document24}" Appearance="Transparent" Margin="0,0,4,0"/>
+                                                       Icon="{ui:SymbolIcon Info24}" Appearance="Transparent" Margin="0,0,4,0"/>
                                             <ui:Button ToolTip="Forget Network" Tag="{Binding Name}" Click="DeleteBtn_Click" 
                                                        Icon="{ui:SymbolIcon Delete24}" Appearance="Secondary" />
                                         </StackPanel>
