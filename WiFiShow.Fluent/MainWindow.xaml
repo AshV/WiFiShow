@@ -73,7 +73,7 @@
                                     BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}" 
                                     BorderThickness="1" 
                                     CornerRadius="4" 
-                                    Width="{Binding ElementName=RootWindow, Path=CardWidth}" 
+                                    Width="{Binding RelativeSource={RelativeSource AncestorType=Window}, Path=CardWidth}" 
                                     Margin="10" Padding="15">
                                 <Grid>
                                     <Grid.RowDefinitions>
@@ -82,6 +82,7 @@
                                         <RowDefinition Height="Auto" />
                                         <RowDefinition Height="Auto" />
                                     </Grid.RowDefinitions>
+
                                     
                                     <TextBlock Grid.Row="0" Text="{Binding Ssid}" FontSize="18" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
                                     
@@ -134,8 +135,8 @@
                 </ItemsControl>
             </ScrollViewer>
 
-            <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
-                <ItemsControl x:Name="TableView" Visibility="Collapsed">
+            <ScrollViewer x:Name="TableView" Grid.Row="1" VerticalScrollBarVisibility="Auto" Visibility="Collapsed">
+                <ItemsControl x:Name="TableList">
                     <ItemsControl.ItemTemplate>
                         <DataTemplate>
                             <Border Background="{DynamicResource CardBackgroundFillColorDefaultBrush}" 

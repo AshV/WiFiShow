@@ -90,7 +90,7 @@ namespace WiFiShow.Fluent
             InitializeComponent();
             ApplicationThemeManager.Apply(this);
             CardsList.ItemsSource = _filteredProfiles;
-            TableView.ItemsSource = _filteredProfiles;
+            TableList.ItemsSource = _filteredProfiles;
             LoadNetworks();
         }
 
