@@ -117,6 +117,7 @@ namespace WiFiShow.Fluent
             }
 
             FilterList(SearchBox.Text);
+            MainTitleBar.Title = $"Wi-Fi Show - {_allProfiles.Count} saved networks";
             LoadingSpinner.Visibility = Visibility.Collapsed;
         }
 
