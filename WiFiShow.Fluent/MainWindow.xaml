@@ -8,7 +8,7 @@
         mc:Ignorable="d"
         Title="Wi-Fi Show" Height="600" Width="800"
         WindowStartupLocation="CenterScreen"
-        WindowBackdropType="Mica"
+        WindowBackdropType="Acrylic"
         ExtendsContentIntoTitleBar="True"
         WindowCornerPreference="Round">
 
