@@ -90,7 +90,7 @@
                 <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
                     <ui:Button x:Name="ViewToggleBtn" Margin="0,0,10,0" Click="ViewToggleBtn_Click" 
                                Padding="12,6"
-                               Icon="{ui:SymbolIcon List24}" ToolTip="Toggle View" />
+                               Icon="{ui:SymbolIcon Grid24}" ToolTip="Toggle View" />
                     
                     <ui:Button x:Name="ToggleAllBtn" Margin="0,0,10,0" Click="ToggleAllBtn_Click"
                                Padding="12,6"
@@ -110,7 +110,7 @@
                              Grid.Row="1" Visibility="Collapsed" 
                              HorizontalAlignment="Center" VerticalAlignment="Center" />
 
-            <ScrollViewer x:Name="CardsView" Grid.Row="1" VerticalScrollBarVisibility="Auto" SizeChanged="CardsView_SizeChanged">
+            <ScrollViewer x:Name="CardsView" Grid.Row="1" Visibility="Collapsed" VerticalScrollBarVisibility="Auto" SizeChanged="CardsView_SizeChanged">
                 <ItemsControl x:Name="CardsList">
                     <ItemsControl.ItemsPanel>
                         <ItemsPanelTemplate>
@@ -189,7 +189,7 @@
                 </ItemsControl>
             </ScrollViewer>
 
-            <Grid Grid.Row="1" x:Name="TableView" Visibility="Collapsed" Grid.IsSharedSizeScope="True">
+            <Grid Grid.Row="1" x:Name="TableView" Grid.IsSharedSizeScope="True">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto" />
                     <RowDefinition Height="*" />

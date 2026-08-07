@@ -148,11 +148,13 @@ namespace WiFiShow.Fluent
             {
                 CardsView.Visibility = Visibility.Collapsed;
                 TableView.Visibility = Visibility.Visible;
+                ViewToggleBtn.Icon = new Wpf.Ui.Controls.SymbolIcon { Symbol = Wpf.Ui.Controls.SymbolRegular.Grid24 };
             }
             else
             {
                 CardsView.Visibility = Visibility.Visible;
                 TableView.Visibility = Visibility.Collapsed;
+                ViewToggleBtn.Icon = new Wpf.Ui.Controls.SymbolIcon { Symbol = Wpf.Ui.Controls.SymbolRegular.List24 };
             }
         }
 
