@@ -1,0 +1,145 @@
+<ui:FluentWindow x:Class="WiFiShow.Fluent.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+        xmlns:local="clr-namespace:WiFiShow.Fluent"
+        mc:Ignorable="d"
+        Title="Wi-Fi Show" Height="650" Width="1000"
+        WindowStartupLocation="CenterScreen"
+        WindowBackdropType="Mica"
+        ExtendsContentIntoTitleBar="True"
+        WindowCornerPreference="Round">
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <ui:TitleBar Grid.Row="0" Title="Wi-Fi Show">
+            <ui:TitleBar.Icon>
+                <ui:SymbolIcon Symbol="Globe24" />
+            </ui:TitleBar.Icon>
+            <!-- Actions placed in the titlebar area for a cleaner look, or just below it -->
+        </ui:TitleBar>
+
+        <Grid Grid.Row="1" Margin="24">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+            </Grid.RowDefinitions>
+            
+            <Grid Grid.Row="0" Margin="0,0,0,24">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+
+                <ui:TextBox x:Name="SearchBox" Width="250" HorizontalAlignment="Left"
+                            PlaceholderText="Search SSID..." Icon="{ui:SymbolIcon Search24}"
+                            TextChanged="SearchBox_TextChanged" />
+
+                <StackPanel Grid.Column="1" Orientation="Horizontal">
+                    <ui:Button x:Name="ViewToggleBtn" Margin="0,0,10,0" Click="ViewToggleBtn_Click" 
+                               Icon="{ui:SymbolIcon List24}" ToolTip="Toggle View" />
+                    
+                    <ui:Button x:Name="ToggleAllBtn" Margin="0,0,10,0" Click="ToggleAllBtn_Click"
+                               Icon="{ui:SymbolIcon Eye24}" Content="Show All" />
+                               
+                    <ui:Button Margin="0,0,10,0" Click="ExportBtn_Click"
+                               Icon="{ui:SymbolIcon Save24}" Content="Export CSV" />
+                               
+                    <ui:Button Click="RefreshBtn_Click"
+                               Icon="{ui:SymbolIcon ArrowClockwise24}" Content="Refresh" />
+                </StackPanel>
+            </Grid>
+
+            <ui:ProgressRing x:Name="LoadingSpinner" IsIndeterminate="True" 
+                             Grid.Row="1" Visibility="Collapsed" 
+                             HorizontalAlignment="Center" VerticalAlignment="Center" />
+
+            <ScrollViewer x:Name="CardsView" Grid.Row="1" VerticalScrollBarVisibility="Auto">
+                <ItemsControl x:Name="CardsList">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <WrapPanel />
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <ui:Card Width="300" Margin="10" Padding="15">
+                                <Grid>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto" />
+                                        <RowDefinition Height="Auto" />
+                                        <RowDefinition Height="Auto" />
+                                        <RowDefinition Height="Auto" />
+                                    </Grid.RowDefinitions>
+                                    
+                                    <TextBlock Grid.Row="0" Text="{Binding Ssid}" FontSize="18" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                                    
+                                    <Border Grid.Row="1" Background="{DynamicResource ControlFillColorDefaultBrush}" CornerRadius="4" Padding="10,5" Margin="0,12,0,0">
+                                        <StackPanel Orientation="Horizontal">
+                                            <ui:SymbolIcon Symbol="Key24" Margin="0,0,5,0" />
+                                            <TextBox Text="{Binding Password, Mode=OneWay}" IsReadOnly="True" BorderThickness="0" Width="220" 
+                                                     VerticalAlignment="Center" FontFamily="Consolas" Background="Transparent" />
+                                        </StackPanel>
+                                    </Border>
+
+                                    <StackPanel Grid.Row="2" Orientation="Horizontal" Margin="0,15,0,0">
+                                        <ui:SymbolIcon Symbol="Shield24" Margin="0,0,5,0" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                                        <TextBlock Text="{Binding AuthType}" VerticalAlignment="Center" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                                    </StackPanel>
+                                    
+                                    <Grid Grid.Row="3" Margin="0,15,0,0">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+                                        
+                                        <ui:ToggleSwitch Grid.Column="0" Content="Auto-Connect"
+                                                         IsChecked="{Binding IsAutoConnect, Mode=OneWay}" 
+                                                         Tag="{Binding Name}"
+                                                         Click="AutoConnectToggle_Click" />
+
+                                        <StackPanel Orientation="Horizontal" Grid.Column="1" HorizontalAlignment="Right">
+                                            <ui:Button ToolTip="Show QR / Details" Tag="{Binding Name}" Click="DetailsBtn_Click" 
+                                                       Icon="{ui:SymbolIcon Info24}" Appearance="Transparent" Margin="0,0,4,0"/>
+                                            <ui:Button ToolTip="Forget Network" Tag="{Binding Name}" Click="DeleteBtn_Click" 
+                                                       Icon="{ui:SymbolIcon Delete24}" Appearance="Danger" />
+                                        </StackPanel>
+                                    </Grid>
+                                </Grid>
+                            </ui:Card>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </ScrollViewer>
+
+            <ui:DataGrid x:Name="TableView" Grid.Row="1" Visibility="Collapsed" 
+                         AutoGenerateColumns="False" CanUserAddRows="False" HeadersVisibility="Column" 
+                         IsReadOnly="True" BorderThickness="1">
+                <ui:DataGrid.Columns>
+                    <DataGridTextColumn Binding="{Binding Ssid, Mode=OneWay}" Header="SSID" Width="2*" />
+                    <DataGridTextColumn Binding="{Binding Password, Mode=OneWay}" Header="Password" Width="2*" />
+                    <DataGridTextColumn Binding="{Binding AuthType, Mode=OneWay}" Header="Auth Type" Width="*" />
+                    <DataGridCheckBoxColumn Binding="{Binding IsAutoConnect}" Header="Auto-Connect" Width="*" />
+                    <DataGridTemplateColumn Header="Actions" Width="100">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <StackPanel Orientation="Horizontal">
+                                    <ui:Button ToolTip="Show QR" Tag="{Binding Name}" Click="DetailsBtn_Click" 
+                                               Icon="{ui:SymbolIcon Info24}" Appearance="Transparent" Margin="0,0,4,0"/>
+                                    <ui:Button ToolTip="Forget" Tag="{Binding Name}" Click="DeleteBtn_Click" 
+                                               Icon="{ui:SymbolIcon Delete24}" Appearance="Danger" />
+                                </StackPanel>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+                </ui:DataGrid.Columns>
+            </ui:DataGrid>
+        </Grid>
+    </Grid>
+</ui:FluentWindow>

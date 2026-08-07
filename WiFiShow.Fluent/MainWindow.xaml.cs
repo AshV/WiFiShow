@@ -1,0 +1,292 @@
+using System;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.ComponentModel;
+using System.Drawing;
+using System.IO;
+using System.Linq;
+using System.Text;
+using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
+using System.Windows.Media.Imaging;
+using CsvHelper;
+using QRCoder;
+using Microsoft.Win32;
+using System.Globalization;
+using Wpf.Ui.Controls;
+using Wpf.Ui.Appearance;
+
+namespace WiFiShow.Fluent
+{
+    public class WiFiProfileViewModel : INotifyPropertyChanged
+    {
+        private WiFiProfile _profile;
+        private bool _showPassword;
+
+        public WiFiProfileViewModel(WiFiProfile profile)
+        {
+            _profile = profile;
+        }
+
+        public string Name => _profile.Name;
+        public string Ssid => _profile.Ssid;
+        public string RealPassword => _profile.Password;
+        public string AuthType => _profile.AuthType;
+
+        public bool IsAutoConnect
+        {
+            get => _profile.IsAutoConnect;
+            set
+            {
+                if (_profile.IsAutoConnect != value)
+                {
+                    _profile.IsAutoConnect = value;
+                    OnPropertyChanged(nameof(IsAutoConnect));
+                }
+            }
+        }
+
+        public bool ShowPassword
+        {
+            get => _showPassword;
+            set
+            {
+                if (_showPassword != value)
+                {
+                    _showPassword = value;
+                    OnPropertyChanged(nameof(ShowPassword));
+                    OnPropertyChanged(nameof(Password));
+                }
+            }
+        }
+
+        public string Password => ShowPassword ? RealPassword : new string('•', RealPassword.Length > 0 ? 8 : 0);
+
+        public event PropertyChangedEventHandler? PropertyChanged;
+        protected virtual void OnPropertyChanged(string propertyName)
+        {
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+        }
+    }
+
+    public partial class MainWindow : FluentWindow
+    {
+        private ObservableCollection<WiFiProfileViewModel> _allProfiles = new ObservableCollection<WiFiProfileViewModel>();
+        private ObservableCollection<WiFiProfileViewModel> _filteredProfiles = new ObservableCollection<WiFiProfileViewModel>();
+        private bool _showAllPasswords = false;
+
+        public MainWindow()
+        {
+            InitializeComponent();
+            ApplicationThemeManager.Apply(this);
+            CardsList.ItemsSource = _filteredProfiles;
+            TableView.ItemsSource = _filteredProfiles;
+            LoadNetworks();
+        }
+
+        private async void LoadNetworks()
+        {
+            LoadingSpinner.Visibility = Visibility.Visible;
+            _allProfiles.Clear();
+            _filteredProfiles.Clear();
+
+            var profiles = await WiFiManager.GetWiFiProfilesAsync();
+            foreach (var p in profiles)
+            {
+                var vm = new WiFiProfileViewModel(p);
+                vm.ShowPassword = _showAllPasswords;
+                _allProfiles.Add(vm);
+            }
+
+            FilterList(SearchBox.Text);
+            LoadingSpinner.Visibility = Visibility.Collapsed;
+        }
+
+        private void FilterList(string query)
+        {
+            _filteredProfiles.Clear();
+            if (string.IsNullOrWhiteSpace(query))
+            {
+                foreach (var p in _allProfiles) _filteredProfiles.Add(p);
+            }
+            else
+            {
+                foreach (var p in _allProfiles.Where(x => x.Ssid.IndexOf(query, StringComparison.OrdinalIgnoreCase) >= 0))
+                {
+                    _filteredProfiles.Add(p);
+                }
+            }
+        }
+
+        private void SearchBox_TextChanged(object sender, System.Windows.Controls.TextChangedEventArgs e)
+        {
+            FilterList(SearchBox.Text);
+        }
+
+        private void ViewToggleBtn_Click(object sender, RoutedEventArgs e)
+        {
+            if (CardsView.Visibility == Visibility.Visible)
+            {
+                CardsView.Visibility = Visibility.Collapsed;
+                TableView.Visibility = Visibility.Visible;
+            }
+            else
+            {
+                CardsView.Visibility = Visibility.Visible;
+                TableView.Visibility = Visibility.Collapsed;
+            }
+        }
+
+        private void ToggleAllBtn_Click(object sender, RoutedEventArgs e)
+        {
+            _showAllPasswords = !_showAllPasswords;
+            foreach (var p in _allProfiles)
+            {
+                p.ShowPassword = _showAllPasswords;
+            }
+        }
+
+        private void RefreshBtn_Click(object sender, RoutedEventArgs e)
+        {
+            LoadNetworks();
+        }
+
+        private void ExportBtn_Click(object sender, RoutedEventArgs e)
+        {
+            var saveFileDialog = new SaveFileDialog
+            {
+                Filter = "CSV file (*.csv)|*.csv",
+                FileName = "wifi_profiles.csv"
+            };
+
+            if (saveFileDialog.ShowDialog() == true)
+            {
+                using (var writer = new StreamWriter(saveFileDialog.FileName, false, Encoding.UTF8))
+                using (var csv = new CsvWriter(writer, CultureInfo.InvariantCulture))
+                {
+                    var records = _allProfiles.Select(p => new
+                    {
+                        p.Name,
+                        p.Ssid,
+                        Password = p.RealPassword,
+                        p.AuthType,
+                        p.IsAutoConnect
+                    }).ToList();
+                    
+                    csv.WriteRecords(records);
+                }
+                System.Windows.MessageBox.Show("Exported successfully!", "Wi-Fi Show");
+            }
+        }
+
+        private async void AutoConnectToggle_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is ToggleSwitch ts && ts.Tag is string profileName)
+            {
+                var profile = _allProfiles.FirstOrDefault(p => p.Name == profileName);
+                if (profile != null)
+                {
+                    bool isAuto = ts.IsChecked ?? false;
+                    profile.IsAutoConnect = isAuto;
+                    await WiFiManager.ToggleAutoConnectAsync(profileName, isAuto);
+                }
+            }
+        }
+
+        private async void DetailsBtn_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is Wpf.Ui.Controls.Button btn && btn.Tag is string profileName)
+            {
+                var profile = _allProfiles.FirstOrDefault(p => p.Name == profileName);
+                if (profile == null) return;
+
+                string detailsText = await WiFiManager.GetProfileDetailsAsync(profileName);
+                
+                var detailsWindow = new FluentWindow
+                {
+                    Title = "Profile Details - " + profile.Ssid,
+                    Width = 500,
+                    Height = 600,
+                    WindowStartupLocation = WindowStartupLocation.CenterOwner,
+                    Owner = this,
+                    WindowBackdropType = WindowBackdropType.Mica,
+                    ExtendsContentIntoTitleBar = true,
+                    WindowCornerPreference = WindowCornerPreference.Round
+                };
+                
+                ApplicationThemeManager.Apply(detailsWindow);
+
+                var grid = new System.Windows.Controls.Grid();
+                grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+                grid.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
+
+                var titleBar = new TitleBar { Title = "Details" };
+                System.Windows.Controls.Grid.SetRow(titleBar, 0);
+                grid.Children.Add(titleBar);
+
+                var sp = new StackPanel { Margin = new Thickness(24) };
+                System.Windows.Controls.Grid.SetRow(sp, 1);
+                
+                sp.Children.Add(new System.Windows.Controls.TextBlock { Text = profile.Ssid, FontSize = 20, FontWeight = FontWeights.Bold, Margin = new Thickness(0,0,0,10) });
+
+                if (!string.IsNullOrEmpty(profile.RealPassword))
+                {
+                    string qrPayload = $"WIFI:T:{profile.AuthType};S:{profile.Ssid};P:{profile.RealPassword};;";
+                    var qrGenerator = new QRCodeGenerator();
+                    var qrCodeData = qrGenerator.CreateQrCode(qrPayload, QRCodeGenerator.ECCLevel.Q);
+                    var qrCode = new QRCode(qrCodeData);
+                    var qrImage = qrCode.GetGraphic(5);
+
+                    var img = new System.Windows.Controls.Image
+                    {
+                        Source = BitmapToImageSource(qrImage),
+                        Width = 150,
+                        Height = 150,
+                        Margin = new Thickness(0,0,0,10),
+                        HorizontalAlignment = HorizontalAlignment.Left
+                    };
+                    sp.Children.Add(img);
+                }
+
+                sp.Children.Add(new ScrollViewer
+                {
+                    MaxHeight = 300,
+                    Content = new System.Windows.Controls.TextBlock { Text = detailsText, FontFamily = new System.Windows.Media.FontFamily("Consolas"), FontSize = 12 }
+                });
+
+                grid.Children.Add(sp);
+                detailsWindow.Content = grid;
+                detailsWindow.ShowDialog();
+            }
+        }
+
+        private BitmapImage BitmapToImageSource(Bitmap bitmap)
+        {
+            using (MemoryStream memory = new MemoryStream())
+            {
+                bitmap.Save(memory, System.Drawing.Imaging.ImageFormat.Bmp);
+                memory.Position = 0;
+                BitmapImage bitmapimage = new BitmapImage();
+                bitmapimage.BeginInit();
+                bitmapimage.StreamSource = memory;
+                bitmapimage.CacheOption = BitmapCacheOption.OnLoad;
+                bitmapimage.EndInit();
+                return bitmapimage;
+            }
+        }
+
+        private async void DeleteBtn_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is Wpf.Ui.Controls.Button btn && btn.Tag is string profileName)
+            {
+                var result = System.Windows.MessageBox.Show($"Are you sure you want to forget '{profileName}'?", "Confirm Delete", System.Windows.MessageBoxButton.YesNo, MessageBoxImage.Warning);
+                if (result == System.Windows.MessageBoxResult.Yes)
+                {
+                    await WiFiManager.DeleteProfileAsync(profileName);
+                    LoadNetworks();
+                }
+            }
+        }
+    }
+}
