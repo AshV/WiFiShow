@@ -12,22 +12,22 @@
         ExtendsContentIntoTitleBar="True"
         WindowCornerPreference="Round">
 
-    <Grid Background="#121212">
+    <Grid Background="{DynamicResource ApplicationBackgroundBrush}">
         <Grid x:Name="AuroraBackground" ClipToBounds="True">
             <Grid.Effect>
                 <BlurEffect Radius="120" KernelType="Gaussian"/>
             </Grid.Effect>
-            <Ellipse Fill="#804A148C" Width="800" Height="800" HorizontalAlignment="Left" VerticalAlignment="Top">
+            <Ellipse Fill="#309C27B0" Width="800" Height="800" HorizontalAlignment="Left" VerticalAlignment="Top">
                 <Ellipse.RenderTransform>
                     <TranslateTransform x:Name="Ellipse1Transform" />
                 </Ellipse.RenderTransform>
             </Ellipse>
-            <Ellipse Fill="#800D47A1" Width="900" Height="900" HorizontalAlignment="Right" VerticalAlignment="Bottom">
+            <Ellipse Fill="#301976D2" Width="900" Height="900" HorizontalAlignment="Right" VerticalAlignment="Bottom">
                 <Ellipse.RenderTransform>
                     <TranslateTransform x:Name="Ellipse2Transform" />
                 </Ellipse.RenderTransform>
             </Ellipse>
-            <Ellipse Fill="#8000838F" Width="700" Height="700" HorizontalAlignment="Center" VerticalAlignment="Center">
+            <Ellipse Fill="#3000BCD4" Width="700" Height="700" HorizontalAlignment="Center" VerticalAlignment="Center">
                 <Ellipse.RenderTransform>
                     <TranslateTransform x:Name="Ellipse3Transform" />
                 </Ellipse.RenderTransform>
@@ -36,14 +36,14 @@
                 <EventTrigger RoutedEvent="Loaded">
                     <BeginStoryboard>
                         <Storyboard RepeatBehavior="Forever">
-                            <DoubleAnimation Storyboard.TargetName="Ellipse1Transform" Storyboard.TargetProperty="X" From="-200" To="400" Duration="0:0:20" AutoReverse="True"/>
-                            <DoubleAnimation Storyboard.TargetName="Ellipse1Transform" Storyboard.TargetProperty="Y" From="-100" To="300" Duration="0:0:25" AutoReverse="True"/>
+                            <DoubleAnimation Storyboard.TargetName="Ellipse1Transform" Storyboard.TargetProperty="X" From="-200" To="400" Duration="0:0:10" AutoReverse="True"/>
+                            <DoubleAnimation Storyboard.TargetName="Ellipse1Transform" Storyboard.TargetProperty="Y" From="-100" To="300" Duration="0:0:12" AutoReverse="True"/>
                             
-                            <DoubleAnimation Storyboard.TargetName="Ellipse2Transform" Storyboard.TargetProperty="X" From="200" To="-500" Duration="0:0:22" AutoReverse="True"/>
-                            <DoubleAnimation Storyboard.TargetName="Ellipse2Transform" Storyboard.TargetProperty="Y" From="100" To="-400" Duration="0:0:18" AutoReverse="True"/>
+                            <DoubleAnimation Storyboard.TargetName="Ellipse2Transform" Storyboard.TargetProperty="X" From="200" To="-500" Duration="0:0:11" AutoReverse="True"/>
+                            <DoubleAnimation Storyboard.TargetName="Ellipse2Transform" Storyboard.TargetProperty="Y" From="100" To="-400" Duration="0:0:9" AutoReverse="True"/>
                             
-                            <DoubleAnimation Storyboard.TargetName="Ellipse3Transform" Storyboard.TargetProperty="X" From="0" To="-300" Duration="0:0:15" AutoReverse="True"/>
-                            <DoubleAnimation Storyboard.TargetName="Ellipse3Transform" Storyboard.TargetProperty="Y" From="0" To="350" Duration="0:0:28" AutoReverse="True"/>
+                            <DoubleAnimation Storyboard.TargetName="Ellipse3Transform" Storyboard.TargetProperty="X" From="0" To="-300" Duration="0:0:7" AutoReverse="True"/>
+                            <DoubleAnimation Storyboard.TargetName="Ellipse3Transform" Storyboard.TargetProperty="Y" From="0" To="350" Duration="0:0:14" AutoReverse="True"/>
                         </Storyboard>
                     </BeginStoryboard>
                 </EventTrigger>
