@@ -1,5 +1,8 @@
 let allNetworks = [];
 let isAllMasked = true;
+let currentView = 'cards';
+let sortColumn = 'profile';
+let sortAscending = true;
 
 const icons = {
   lock: '<svg class="icon-svg" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0110 0v4"></path></svg>',
@@ -46,8 +49,49 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
+  document.getElementById('viewCardsBtn').addEventListener('click', () => switchView('cards'));
+  document.getElementById('viewTableBtn').addEventListener('click', () => switchView('table'));
+  
+  document.querySelectorAll('th[data-sort]').forEach(th => {
+    th.addEventListener('click', () => {
+      const col = th.getAttribute('data-sort');
+      if (sortColumn === col) {
+        sortAscending = !sortAscending;
+      } else {
+        sortColumn = col;
+        sortAscending = true;
+      }
+      
+      // Update header styles
+      document.querySelectorAll('th[data-sort]').forEach(h => {
+        h.classList.remove('asc', 'desc');
+      });
+      th.classList.add(sortAscending ? 'asc' : 'desc');
+      
+      filterNetworks();
+    });
+  });
+
   loadNetworks();
 });
+
+function switchView(view) {
+  currentView = view;
+  document.getElementById('viewCardsBtn').classList.toggle('active', view === 'cards');
+  document.getElementById('viewTableBtn').classList.toggle('active', view === 'table');
+  
+  const list = document.getElementById('networkList');
+  const table = document.getElementById('networkTableContainer');
+  
+  if (view === 'cards') {
+    list.classList.remove('hidden');
+    table.classList.add('hidden');
+  } else {
+    list.classList.add('hidden');
+    table.classList.remove('hidden');
+  }
+  filterNetworks();
+}
 
 async function runCmd(cmd) {
     let result = await Neutralino.os.execCommand(cmd);
@@ -125,12 +169,16 @@ async function loadNetworks() {
         await runCmd(`powershell -Command "Remove-Item -Recurse -Force '${exportFolder}'"`);
     } catch(e) {}
     
-    renderNetworks(allNetworks);
+    filterNetworks();
   } catch (error) {
     showToast(`Error: ${error}`);
   } finally {
     loading.classList.add('hidden');
-    list.classList.remove('hidden');
+    if (currentView === 'cards') {
+      list.classList.remove('hidden');
+    } else {
+      document.getElementById('networkTableContainer').classList.remove('hidden');
+    }
   }
 }
 
@@ -319,8 +367,213 @@ function renderNetworks(networks) {
 
 function filterNetworks() {
   const query = document.getElementById('searchInput').value.toLowerCase();
-  const filtered = allNetworks.filter(net => net.profile.toLowerCase().includes(query));
-  renderNetworks(filtered);
+  let filtered = allNetworks.filter(net => net.profile.toLowerCase().includes(query));
+  
+  filtered.sort((a, b) => {
+    let valA = '', valB = '';
+    
+    if (sortColumn === 'profile') {
+      valA = a.profile.toLowerCase();
+      valB = b.profile.toLowerCase();
+    } else if (sortColumn === 'password') {
+      valA = a.details ? a.details.password.toLowerCase() : '';
+      valB = b.details ? b.details.password.toLowerCase() : '';
+    } else if (sortColumn === 'authType') {
+      valA = a.details ? a.details.authType.toLowerCase() : '';
+      valB = b.details ? b.details.authType.toLowerCase() : '';
+    } else if (sortColumn === 'isAuto') {
+      valA = a.details ? (a.details.isAuto ? 1 : 0) : 0;
+      valB = b.details ? (b.details.isAuto ? 1 : 0) : 0;
+    }
+    
+    if (valA < valB) return sortAscending ? -1 : 1;
+    if (valA > valB) return sortAscending ? 1 : -1;
+    return 0;
+  });
+
+  if (currentView === 'cards') {
+    renderNetworks(filtered);
+  } else {
+    renderNetworksTable(filtered);
+  }
+}
+
+function renderNetworksTable(networks) {
+  const tbody = document.getElementById('networkTableBody');
+  tbody.innerHTML = '';
+  
+  if (networks.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: var(--text-muted); padding: 2rem;">No networks found.</td></tr>';
+    return;
+  }
+
+  networks.forEach(net => {
+    let icon = icons.lock;
+    let pwdDisplay = "••••••••";
+    let canUnmask = true; 
+    
+    if (net.details) {
+      if (net.details.password.includes("Open Network")) {
+        icon = icons.unlock;
+        pwdDisplay = "Open Network";
+      } else if (!net.details.hasRealPassword) {
+        icon = icons.warning;
+        pwdDisplay = net.details.password;
+      } else {
+        pwdDisplay = net.isMasked ? "••••••••" : net.details.password;
+      }
+      canUnmask = net.details.hasRealPassword;
+    }
+
+    const tr = document.createElement('tr');
+
+    // SSID Cell
+    const tdSsid = document.createElement('td');
+    tdSsid.className = 'ssid-cell';
+    tdSsid.innerHTML = `<span>${icon}</span> <span>${net.profile}</span>`;
+    tr.appendChild(tdSsid);
+
+    // Password Cell
+    const tdPwd = document.createElement('td');
+    tdPwd.className = 'pwd-cell';
+    const pwdContainer = document.createElement('div');
+    pwdContainer.className = 'pwd-container';
+    
+    const pwdLabel = document.createElement('span');
+    pwdLabel.className = 'pwd-text';
+    pwdLabel.textContent = pwdDisplay;
+    pwdContainer.appendChild(pwdLabel);
+
+    if (canUnmask) {
+      const unmaskBtn = document.createElement('button');
+      unmaskBtn.className = 'icon-btn';
+      unmaskBtn.innerHTML = net.isMasked ? icons.eye : icons.eyeOff;
+      unmaskBtn.onclick = async () => {
+        net.isMasked = !net.isMasked;
+        filterNetworks(); 
+      };
+      pwdContainer.appendChild(unmaskBtn);
+    }
+    tdPwd.appendChild(pwdContainer);
+    tr.appendChild(tdPwd);
+
+    // Auth Type Cell
+    const tdAuth = document.createElement('td');
+    tdAuth.textContent = net.details ? net.details.authType : '';
+    tr.appendChild(tdAuth);
+
+    // Auto-Connect Cell
+    const tdAuto = document.createElement('td');
+    const autoToggle = document.createElement('label');
+    autoToggle.className = 'toggle-switch has-tooltip';
+    autoToggle.setAttribute('data-tooltip', 'Auto-connect');
+    const autoInput = document.createElement('input');
+    autoInput.type = 'checkbox';
+    if (net.details) {
+        autoInput.checked = net.details.isAuto;
+    }
+    const autoSlider = document.createElement('span');
+    autoSlider.className = 'slider';
+    
+    autoInput.onchange = async (e) => {
+      const isChecked = e.target.checked;
+      const mode = isChecked ? "auto" : "manual";
+      try {
+        await runCmd(`netsh wlan set profileparameter name="${net.profile}" connectionmode=${mode}`);
+        net.details.isAuto = isChecked;
+        showToast(`Auto-connect ${isChecked ? 'enabled' : 'disabled'}.`);
+      } catch (err) {
+        showToast(`Error updating mode`);
+        e.target.checked = !isChecked; // revert on fail
+      }
+    };
+    autoToggle.appendChild(autoInput);
+    autoToggle.appendChild(autoSlider);
+    tdAuto.appendChild(autoToggle);
+    tr.appendChild(tdAuto);
+
+    // Actions Cell
+    const tdActions = document.createElement('td');
+    tdActions.className = 'actions-cell';
+    const actionsContainer = document.createElement('div');
+    actionsContainer.className = 'card-actions'; // Reuse existing styles for inline flex
+
+    // QR Code
+    if (net.details && net.details.hasRealPassword) {
+      const qrBtn = document.createElement('button');
+      qrBtn.className = 'icon-btn has-tooltip';
+      qrBtn.setAttribute('data-tooltip', 'Show QR Code');
+      qrBtn.innerHTML = icons.qr;
+      qrBtn.onclick = async () => {
+        const encryption = net.details.authType.toLowerCase().includes("wep") ? "WEP" : "WPA";
+        const qrString = `WIFI:S:${net.profile};T:${encryption};P:${net.details.password};;`;
+        showModal(`QR Code for ${net.profile}`, null, qrString);
+      };
+      actionsContainer.appendChild(qrBtn);
+    }
+
+    // Copy Button
+    if (net.details && net.details.hasRealPassword) {
+      const copyBtn = document.createElement('button');
+      copyBtn.className = 'icon-btn has-tooltip';
+      copyBtn.setAttribute('data-tooltip', 'Copy Password');
+      copyBtn.innerHTML = icons.copy;
+      copyBtn.onclick = async () => {
+        try {
+          await Neutralino.clipboard.writeText(net.details.password);
+          showToast('Copied to clipboard! 📋');
+        } catch (e) {
+          showToast('Failed to copy');
+        }
+      };
+      actionsContainer.appendChild(copyBtn);
+    }
+
+    // Details Button
+    const detailsBtn = document.createElement('button');
+    detailsBtn.className = 'icon-btn has-tooltip';
+    detailsBtn.setAttribute('data-tooltip', 'Details');
+    detailsBtn.innerHTML = icons.info;
+    detailsBtn.onclick = async () => {
+      try {
+        const detailsText = await runCmd(`netsh wlan show profile name="${net.profile}" key=clear`);
+        showModal(`Details for ${net.profile}`, detailsText);
+      } catch (e) {
+        showToast('Error fetching details');
+      }
+    };
+    actionsContainer.appendChild(detailsBtn);
+
+    const sep = document.createElement('div');
+    sep.style.width = '1px';
+    sep.style.height = '16px';
+    sep.style.background = 'var(--sep-color)';
+    sep.style.margin = '0 0.5rem';
+    actionsContainer.appendChild(sep);
+
+    // Forget Button
+    const forgetBtn = document.createElement('button');
+    forgetBtn.className = 'icon-btn danger has-tooltip';
+    forgetBtn.setAttribute('data-tooltip', 'Forget Network');
+    forgetBtn.innerHTML = icons.trash;
+    forgetBtn.onclick = async () => {
+      if (confirm(`Are you sure you want to forget '${net.profile}'?`)) {
+        try {
+          await runCmd(`netsh wlan delete profile name="${net.profile}"`);
+          showToast("Network forgotten successfully.");
+          loadNetworks();
+        } catch (e) {
+          showToast(`Error: ${e}`);
+        }
+      }
+    };
+    actionsContainer.appendChild(forgetBtn);
+
+    tdActions.appendChild(actionsContainer);
+    tr.appendChild(tdActions);
+
+    tbody.appendChild(tr);
+  });
 }
 
 function showToast(msg) {

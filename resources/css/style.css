@@ -300,6 +300,145 @@ main {
   align-items: center;
 }
 
+/* View Toggle */
+.view-toggle {
+  display: flex;
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 8px;
+  padding: 0.25rem;
+  gap: 0.25rem;
+}
+.view-toggle .icon-btn {
+  padding: 0.35rem;
+}
+.view-toggle .icon-btn.active {
+  background: white;
+  color: var(--primary);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.header-divider {
+  width: 1px;
+  height: 24px;
+  background: var(--glass-border);
+  margin: 0 0.5rem;
+}
+
+/* Table View */
+.network-table-container {
+  flex: 1;
+  overflow: auto;
+  padding: 1.5rem;
+}
+
+.network-table-container::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+.network-table-container::-webkit-scrollbar-track {
+  background: transparent;
+}
+.network-table-container::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+}
+
+.network-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  background: rgba(255, 255, 255, 0.4);
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid var(--glass-border);
+}
+
+.network-table th,
+.network-table td {
+  padding: 1rem 1.25rem;
+  text-align: left;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.network-table th {
+  background: rgba(255, 255, 255, 0.6);
+  font-weight: 600;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+  user-select: none;
+  transition: background 0.2s;
+  white-space: nowrap;
+}
+
+.network-table th:hover {
+  background: rgba(255, 255, 255, 0.8);
+}
+.network-table th:last-child {
+  cursor: default;
+}
+.network-table th:last-child:hover {
+  background: rgba(255, 255, 255, 0.6);
+}
+
+.network-table tr {
+  transition: background 0.2s;
+}
+
+.network-table tbody tr:hover {
+  background: rgba(255, 255, 255, 0.6);
+}
+
+.network-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.network-table td.ssid-cell {
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.network-table td.pwd-cell {
+  font-family: monospace;
+  color: var(--text-muted);
+}
+.network-table td.pwd-cell .pwd-container {
+  padding: 0;
+  background: transparent;
+  border: none;
+  justify-content: flex-start;
+  gap: 0.5rem;
+}
+
+.network-table td.actions-cell {
+  white-space: nowrap;
+}
+
+.sort-icon {
+  display: inline-block;
+  width: 12px;
+  margin-left: 4px;
+  font-size: 0.7rem;
+}
+.sort-icon::after {
+  content: "↕";
+  opacity: 0.3;
+}
+th[data-sort].asc .sort-icon::after {
+  content: "↑";
+  opacity: 1;
+  color: var(--primary);
+}
+th[data-sort].desc .sort-icon::after {
+  content: "↓";
+  opacity: 1;
+  color: var(--primary);
+}
+
 /* Utilities */
 .hidden { display: none !important; }
 
