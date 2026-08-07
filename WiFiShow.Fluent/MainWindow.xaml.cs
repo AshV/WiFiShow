@@ -237,7 +237,7 @@ namespace WiFiShow.Fluent
                     bool isAuto = ts.IsChecked ?? false;
                     profile.IsAutoConnect = isAuto;
                     await WiFiManager.ToggleAutoConnectAsync(profileName, isAuto);
-                    _snackbarService.Show("Auto-Connect Updated", $"Auto-Connect is now {(isAuto ? "enabled" : "disabled")} for {profileName}.", Wpf.Ui.Controls.ControlAppearance.Secondary, new Wpf.Ui.Controls.SymbolIcon(Wpf.Ui.Controls.SymbolRegular.Wifi24), TimeSpan.FromSeconds(2));
+                    _snackbarService.Show("Auto-Connect Updated", $"Auto-Connect is now {(isAuto ? "enabled" : "disabled")} for {profileName}.", Wpf.Ui.Controls.ControlAppearance.Secondary, new Wpf.Ui.Controls.SymbolIcon(Wpf.Ui.Controls.SymbolRegular.Globe24), TimeSpan.FromSeconds(2));
                 }
             }
         }
