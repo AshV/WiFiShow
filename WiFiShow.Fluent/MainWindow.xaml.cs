@@ -194,6 +194,69 @@ namespace WiFiShow.Fluent
             }
         }
 
+        private void QRBtn_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is Wpf.Ui.Controls.Button btn && btn.Tag is string profileName)
+            {
+                var profile = _allProfiles.FirstOrDefault(p => p.Name == profileName);
+                if (profile == null) return;
+
+                var detailsWindow = new FluentWindow
+                {
+                    Title = "QR Code - " + profile.Ssid,
+                    Width = 400,
+                    Height = 500,
+                    WindowStartupLocation = WindowStartupLocation.CenterOwner,
+                    Owner = this,
+                    WindowBackdropType = WindowBackdropType.Mica,
+                    ExtendsContentIntoTitleBar = true,
+                    WindowCornerPreference = WindowCornerPreference.Round
+                };
+                
+                ApplicationThemeManager.Apply(detailsWindow);
+
+                var grid = new System.Windows.Controls.Grid();
+                grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+                grid.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
+
+                var titleBar = new TitleBar { Title = "Scan to Connect" };
+                System.Windows.Controls.Grid.SetRow(titleBar, 0);
+                grid.Children.Add(titleBar);
+
+                var sp = new StackPanel { Margin = new Thickness(24), HorizontalAlignment = HorizontalAlignment.Center };
+                System.Windows.Controls.Grid.SetRow(sp, 1);
+                
+                sp.Children.Add(new System.Windows.Controls.TextBlock { Text = profile.Ssid, FontSize = 20, FontWeight = FontWeights.Bold, Margin = new Thickness(0,0,0,20), HorizontalAlignment = HorizontalAlignment.Center });
+
+                if (!string.IsNullOrEmpty(profile.RealPassword))
+                {
+                    string qrPayload = $"WIFI:T:{profile.AuthType};S:{profile.Ssid};P:{profile.RealPassword};;";
+                    var qrGenerator = new QRCodeGenerator();
+                    var qrCodeData = qrGenerator.CreateQrCode(qrPayload, QRCodeGenerator.ECCLevel.Q);
+                    var qrCode = new QRCode(qrCodeData);
+                    var qrImage = qrCode.GetGraphic(8);
+
+                    var img = new System.Windows.Controls.Image
+                    {
+                        Source = BitmapToImageSource(qrImage),
+                        Width = 250,
+                        Height = 250,
+                        Margin = new Thickness(0,0,0,10),
+                        HorizontalAlignment = HorizontalAlignment.Center
+                    };
+                    sp.Children.Add(img);
+                }
+                else
+                {
+                    sp.Children.Add(new System.Windows.Controls.TextBlock { Text = "No password available for QR code.", HorizontalAlignment = HorizontalAlignment.Center });
+                }
+
+                grid.Children.Add(sp);
+                detailsWindow.Content = grid;
+                detailsWindow.ShowDialog();
+            }
+        }
+
         private async void DetailsBtn_Click(object sender, RoutedEventArgs e)
         {
             if (sender is Wpf.Ui.Controls.Button btn && btn.Tag is string profileName)
@@ -206,7 +269,7 @@ namespace WiFiShow.Fluent
                 var detailsWindow = new FluentWindow
                 {
                     Title = "Profile Details - " + profile.Ssid,
-                    Width = 500,
+                    Width = 600,
                     Height = 600,
                     WindowStartupLocation = WindowStartupLocation.CenterOwner,
                     Owner = this,
@@ -230,28 +293,8 @@ namespace WiFiShow.Fluent
                 
                 sp.Children.Add(new System.Windows.Controls.TextBlock { Text = profile.Ssid, FontSize = 20, FontWeight = FontWeights.Bold, Margin = new Thickness(0,0,0,10) });
 
-                if (!string.IsNullOrEmpty(profile.RealPassword))
-                {
-                    string qrPayload = $"WIFI:T:{profile.AuthType};S:{profile.Ssid};P:{profile.RealPassword};;";
-                    var qrGenerator = new QRCodeGenerator();
-                    var qrCodeData = qrGenerator.CreateQrCode(qrPayload, QRCodeGenerator.ECCLevel.Q);
-                    var qrCode = new QRCode(qrCodeData);
-                    var qrImage = qrCode.GetGraphic(5);
-
-                    var img = new System.Windows.Controls.Image
-                    {
-                        Source = BitmapToImageSource(qrImage),
-                        Width = 150,
-                        Height = 150,
-                        Margin = new Thickness(0,0,0,10),
-                        HorizontalAlignment = HorizontalAlignment.Left
-                    };
-                    sp.Children.Add(img);
-                }
-
                 sp.Children.Add(new ScrollViewer
                 {
-                    MaxHeight = 300,
                     Content = new System.Windows.Controls.TextBlock { Text = detailsText, FontFamily = new System.Windows.Media.FontFamily("Consolas"), FontSize = 12 }
                 });
 

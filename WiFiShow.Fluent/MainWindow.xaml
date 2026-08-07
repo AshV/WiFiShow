@@ -20,7 +20,7 @@
 
         <ui:TitleBar Grid.Row="0" Title="Wi-Fi Show">
             <ui:TitleBar.Icon>
-                <ui:SymbolIcon Symbol="Globe24" />
+                <ui:ImageIcon Source="pack://application:,,,/appIcon.png" />
             </ui:TitleBar.Icon>
             <!-- Actions placed in the titlebar area for a cleaner look, or just below it -->
         </ui:TitleBar>
@@ -105,8 +105,10 @@
                                                          Click="AutoConnectToggle_Click" />
 
                                         <StackPanel Orientation="Horizontal" Grid.Column="1" HorizontalAlignment="Right">
-                                            <ui:Button ToolTip="Show QR / Details" Tag="{Binding Name}" Click="DetailsBtn_Click" 
-                                                       Icon="{ui:SymbolIcon Info24}" Appearance="Transparent" Margin="0,0,4,0"/>
+                                            <ui:Button ToolTip="Show QR" Tag="{Binding Name}" Click="QRBtn_Click" 
+                                                       Icon="{ui:SymbolIcon QrCode24}" Appearance="Transparent" Margin="0,0,4,0"/>
+                                            <ui:Button ToolTip="Details" Tag="{Binding Name}" Click="DetailsBtn_Click" 
+                                                       Icon="{ui:SymbolIcon Document24}" Appearance="Transparent" Margin="0,0,4,0"/>
                                             <ui:Button ToolTip="Forget Network" Tag="{Binding Name}" Click="DeleteBtn_Click" 
                                                        Icon="{ui:SymbolIcon Delete24}" Appearance="Danger" />
                                         </StackPanel>
@@ -130,8 +132,10 @@
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
                                 <StackPanel Orientation="Horizontal">
-                                    <ui:Button ToolTip="Show QR" Tag="{Binding Name}" Click="DetailsBtn_Click" 
-                                               Icon="{ui:SymbolIcon Info24}" Appearance="Transparent" Margin="0,0,4,0"/>
+                                    <ui:Button ToolTip="Show QR" Tag="{Binding Name}" Click="QRBtn_Click" 
+                                               Icon="{ui:SymbolIcon QrCode24}" Appearance="Transparent" Margin="0,0,4,0"/>
+                                    <ui:Button ToolTip="Details" Tag="{Binding Name}" Click="DetailsBtn_Click" 
+                                               Icon="{ui:SymbolIcon Document24}" Appearance="Transparent" Margin="0,0,4,0"/>
                                     <ui:Button ToolTip="Forget" Tag="{Binding Name}" Click="DeleteBtn_Click" 
                                                Icon="{ui:SymbolIcon Delete24}" Appearance="Danger" />
                                 </StackPanel>

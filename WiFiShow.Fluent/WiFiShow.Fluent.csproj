@@ -15,4 +15,8 @@
     <PackageReference Include="WPF-UI" Version="3.0.0" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Resource Include="..\resources\icons\appIcon.png" Link="appIcon.png" />
+  </ItemGroup>
+
 </Project>
