@@ -52,7 +52,7 @@ $manifest = @"
   
   <Identity Name="AshishVishwakarma.WiFiShow"
     Publisher="CN=Ashish Vishwakarma"
-    Version="2.0.0.0" 
+    Version="2.1.0.0" 
     ProcessorArchitecture="x64" />
     
   <Properties>
@@ -94,7 +94,7 @@ Set-Content -Path "MsixPackage\AppxManifest.xml" -Value $manifest -Encoding UTF8
 
 # Pack MSIX
 $makeappx = "C:\Program Files (x86)\Windows Kits\10\bin\10.0.19041.0\x64\makeappx.exe"
-& $makeappx pack /v /d "$PWD\MsixPackage" /p "$PWD\Output\WiFiShow_2.0.msix" /o
+& $makeappx pack /v /d "$PWD\MsixPackage" /p "$PWD\Output\WiFiShow_2.1.msix" /o
 if ($LASTEXITCODE -ne 0) { throw "makeappx failed" }
 
 Write-Host "MSIX generation successful!"

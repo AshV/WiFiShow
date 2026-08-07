@@ -3,7 +3,7 @@
 ; Non-commercial use only
 
 #define MyAppName "Wi-Fi Show"
-#define MyAppVersion "2.0"
+#define MyAppVersion "2.1"
 #define MyAppPublisher "Ashish Vishwakarma"
 #define MyAppURL "https://www.ashishvishwakarma.com/WiFiShow"
 #define MyAppExeName "WiFiShow.Fluent.exe"
