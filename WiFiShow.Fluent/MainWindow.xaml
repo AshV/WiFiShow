@@ -6,7 +6,7 @@
         xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
         xmlns:local="clr-namespace:WiFiShow.Fluent"
         mc:Ignorable="d"
-        Title="Wi-Fi Show" Height="650" Width="1000"
+        Title="Wi-Fi Show" Height="600" Width="800"
         WindowStartupLocation="CenterScreen"
         WindowBackdropType="Mica"
         ExtendsContentIntoTitleBar="True"
@@ -80,11 +80,19 @@
                                         <RowDefinition Height="Auto" />
                                         <RowDefinition Height="Auto" />
                                         <RowDefinition Height="Auto" />
-                                        <RowDefinition Height="Auto" />
                                     </Grid.RowDefinitions>
-
                                     
-                                    <TextBlock Grid.Row="0" Text="{Binding Ssid}" FontSize="18" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                                    <Grid Grid.Row="0">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Grid.Column="0" Text="{Binding Ssid}" FontSize="18" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                                        <StackPanel Grid.Column="1" Orientation="Horizontal" Opacity="0.7">
+                                            <ui:SymbolIcon Symbol="Shield24" Margin="0,0,4,0" FontSize="14" />
+                                            <TextBlock Text="{Binding AuthType}" FontSize="12" VerticalAlignment="Center" />
+                                        </StackPanel>
+                                    </Grid>
                                     
                                     <Border Grid.Row="1" Background="{DynamicResource ControlFillColorDefaultBrush}" CornerRadius="4" Padding="10,5" Margin="0,12,0,0">
                                         <Grid>
@@ -102,13 +110,8 @@
                                             </StackPanel>
                                         </Grid>
                                     </Border>
-
-                                    <StackPanel Grid.Row="2" Orientation="Horizontal" Margin="0,15,0,0">
-                                        <ui:SymbolIcon Symbol="Shield24" Margin="0,0,5,0" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
-                                        <TextBlock Text="{Binding AuthType}" VerticalAlignment="Center" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
-                                    </StackPanel>
                                     
-                                    <Grid Grid.Row="3" Margin="0,15,0,0">
+                                    <Grid Grid.Row="2" Margin="0,15,0,0">
                                         <Grid.ColumnDefinitions>
                                             <ColumnDefinition Width="*" />
                                             <ColumnDefinition Width="Auto" />
@@ -125,7 +128,7 @@
                                             <ui:Button ToolTip="Details" Tag="{Binding Name}" Click="DetailsBtn_Click" 
                                                        Icon="{ui:SymbolIcon Document24}" Appearance="Transparent" Margin="0,0,4,0"/>
                                             <ui:Button ToolTip="Forget Network" Tag="{Binding Name}" Click="DeleteBtn_Click" 
-                                                       Icon="{ui:SymbolIcon Delete24}" Appearance="Danger" />
+                                                       Icon="{ui:SymbolIcon Delete24}" Appearance="Secondary" />
                                         </StackPanel>
                                     </Grid>
                                 </Grid>
@@ -135,69 +138,95 @@
                 </ItemsControl>
             </ScrollViewer>
 
-            <ScrollViewer x:Name="TableView" Grid.Row="1" VerticalScrollBarVisibility="Auto" Visibility="Collapsed">
-                <ItemsControl x:Name="TableList">
-                    <ItemsControl.ItemTemplate>
-                        <DataTemplate>
-                            <Border Background="{DynamicResource CardBackgroundFillColorDefaultBrush}" 
-                                    BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}" 
-                                    BorderThickness="1" 
-                                    CornerRadius="4" 
-                                    Margin="10,0,10,8" 
-                                    Padding="15,10">
-                                <Grid>
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="Auto" />
-                                        <ColumnDefinition Width="2*" />
-                                        <ColumnDefinition Width="2*" />
-                                        <ColumnDefinition Width="Auto" />
-                                        <ColumnDefinition Width="Auto" />
-                                    </Grid.ColumnDefinitions>
-                                    
-                                    <ui:SymbolIcon Grid.Column="0" Symbol="Globe24" Margin="0,0,15,0" FontSize="24" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
-                                    
-                                    <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="0,0,15,0">
-                                        <TextBlock Text="{Binding Ssid}" FontSize="16" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
-                                        <TextBlock Text="{Binding AuthType}" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
-                                    </StackPanel>
-                                    
-                                    <Border Grid.Column="2" Background="{DynamicResource ControlFillColorDefaultBrush}" CornerRadius="4" Padding="5" Margin="0,0,15,0" VerticalAlignment="Center">
-                                        <Grid>
-                                            <Grid.ColumnDefinitions>
-                                                <ColumnDefinition Width="Auto" />
-                                                <ColumnDefinition Width="*" />
-                                                <ColumnDefinition Width="Auto" />
-                                            </Grid.ColumnDefinitions>
-                                            <ui:SymbolIcon Grid.Column="0" Symbol="Key24" Margin="0,0,5,0" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
-                                            <TextBox Grid.Column="1" Text="{Binding Password, Mode=OneWay}" IsReadOnly="True" BorderThickness="0" 
-                                                     VerticalAlignment="Center" FontFamily="Consolas" Background="Transparent" />
-                                            <StackPanel Grid.Column="2" Orientation="Horizontal">
-                                                <ui:Button Appearance="Transparent" Padding="4" ToolTip="Copy Password" Tag="{Binding RealPassword}" Click="CopyPassword_Click" Icon="{ui:SymbolIcon Copy24}"/>
-                                                <ui:Button Appearance="Transparent" Padding="4" ToolTip="Toggle Visibility" Tag="{Binding Name}" Click="ToggleSinglePassword_Click" Icon="{ui:SymbolIcon Eye24}"/>
-                                            </StackPanel>
-                                        </Grid>
-                                    </Border>
-                                    
-                                    <ui:ToggleSwitch Grid.Column="3" ToolTip="Auto-Connect"
-                                                     IsChecked="{Binding IsAutoConnect, Mode=OneWay}" 
-                                                     Tag="{Binding Name}"
-                                                     Click="AutoConnectToggle_Click" 
-                                                     VerticalAlignment="Center" Margin="0,0,15,0" />
+            <Grid Grid.Row="1" x:Name="TableView" Visibility="Collapsed" Grid.IsSharedSizeScope="True">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                </Grid.RowDefinitions>
+                
+                <Border Grid.Row="0" BorderThickness="0,0,0,1" BorderBrush="{DynamicResource DividerStrokeColorDefaultBrush}" Padding="15,10" Margin="10,0,10,0">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" SharedSizeGroup="IconCol" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" SharedSizeGroup="AutoCol" />
+                            <ColumnDefinition Width="Auto" SharedSizeGroup="ActionsCol" />
+                        </Grid.ColumnDefinitions>
+                        
+                        <!-- Empty spacer for the icon -->
+                        <Border Grid.Column="0" Width="39" />
+                        <ui:Button Grid.Column="1" Content="SSID / Auth" Tag="Ssid" Appearance="Transparent" Click="SortColumn_Click" Padding="5" FontWeight="SemiBold" />
+                        <TextBlock Grid.Column="2" Text="Password" VerticalAlignment="Center" FontWeight="SemiBold" Opacity="0.7" Margin="5,0,0,0" />
+                        <ui:Button Grid.Column="3" Content="Auto-Connect" Tag="IsAutoConnect" Appearance="Transparent" Click="SortColumn_Click" Padding="5" FontWeight="SemiBold" Margin="0,0,15,0" />
+                        <TextBlock Grid.Column="4" Text="Actions" VerticalAlignment="Center" FontWeight="SemiBold" Opacity="0.7" TextAlignment="Center" Width="100" />
+                    </Grid>
+                </Border>
 
-                                    <StackPanel Grid.Column="4" Orientation="Horizontal" VerticalAlignment="Center">
-                                        <ui:Button ToolTip="Show QR" Tag="{Binding Name}" Click="QRBtn_Click" 
-                                                   Icon="{ui:SymbolIcon QrCode24}" Appearance="Transparent" Margin="0,0,4,0"/>
-                                        <ui:Button ToolTip="Details" Tag="{Binding Name}" Click="DetailsBtn_Click" 
-                                                   Icon="{ui:SymbolIcon Document24}" Appearance="Transparent" Margin="0,0,4,0"/>
-                                        <ui:Button ToolTip="Forget Network" Tag="{Binding Name}" Click="DeleteBtn_Click" 
-                                                   Icon="{ui:SymbolIcon Delete24}" Appearance="Danger" />
-                                    </StackPanel>
-                                </Grid>
-                            </Border>
-                        </DataTemplate>
-                    </ItemsControl.ItemTemplate>
-                </ItemsControl>
-            </ScrollViewer>
+                <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+                    <ItemsControl x:Name="TableList">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Border Background="{DynamicResource CardBackgroundFillColorDefaultBrush}" 
+                                        BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}" 
+                                        BorderThickness="1" 
+                                        CornerRadius="4" 
+                                        Margin="10,8,10,0" 
+                                        Padding="15,10">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto" SharedSizeGroup="IconCol" />
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="Auto" SharedSizeGroup="AutoCol" />
+                                            <ColumnDefinition Width="Auto" SharedSizeGroup="ActionsCol" />
+                                        </Grid.ColumnDefinitions>
+                                        
+                                        <ui:SymbolIcon Grid.Column="0" Symbol="Globe24" Margin="0,0,15,0" FontSize="24" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                                        
+                                        <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="0,0,15,0">
+                                            <TextBlock Text="{Binding Ssid}" FontSize="16" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                                            <TextBlock Text="{Binding AuthType}" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                                        </StackPanel>
+                                        
+                                        <Border Grid.Column="2" Background="{DynamicResource ControlFillColorDefaultBrush}" CornerRadius="4" Padding="5" Margin="0,0,15,0" VerticalAlignment="Center">
+                                            <Grid>
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="Auto" />
+                                                    <ColumnDefinition Width="*" />
+                                                    <ColumnDefinition Width="Auto" />
+                                                </Grid.ColumnDefinitions>
+                                                <ui:SymbolIcon Grid.Column="0" Symbol="Key24" Margin="0,0,5,0" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                                                <TextBox Grid.Column="1" Text="{Binding Password, Mode=OneWay}" IsReadOnly="True" BorderThickness="0" 
+                                                         VerticalAlignment="Center" FontFamily="Consolas" Background="Transparent" />
+                                                <StackPanel Grid.Column="2" Orientation="Horizontal">
+                                                    <ui:Button Appearance="Transparent" Padding="4" ToolTip="Copy Password" Tag="{Binding RealPassword}" Click="CopyPassword_Click" Icon="{ui:SymbolIcon Copy24}"/>
+                                                    <ui:Button Appearance="Transparent" Padding="4" ToolTip="Toggle Visibility" Tag="{Binding Name}" Click="ToggleSinglePassword_Click" Icon="{ui:SymbolIcon Eye24}"/>
+                                                </StackPanel>
+                                            </Grid>
+                                        </Border>
+                                        
+                                        <ui:ToggleSwitch Grid.Column="3" ToolTip="Auto-Connect"
+                                                         IsChecked="{Binding IsAutoConnect, Mode=OneWay}" 
+                                                         Tag="{Binding Name}"
+                                                         Click="AutoConnectToggle_Click" 
+                                                         VerticalAlignment="Center" Margin="0,0,15,0" />
+
+                                        <StackPanel Grid.Column="4" Orientation="Horizontal" VerticalAlignment="Center">
+                                            <ui:Button ToolTip="Show QR" Tag="{Binding Name}" Click="QRBtn_Click" 
+                                                       Icon="{ui:SymbolIcon QrCode24}" Appearance="Transparent" Margin="0,0,4,0"/>
+                                            <ui:Button ToolTip="Details" Tag="{Binding Name}" Click="DetailsBtn_Click" 
+                                                       Icon="{ui:SymbolIcon Document24}" Appearance="Transparent" Margin="0,0,4,0"/>
+                                            <ui:Button ToolTip="Forget Network" Tag="{Binding Name}" Click="DeleteBtn_Click" 
+                                                       Icon="{ui:SymbolIcon Delete24}" Appearance="Secondary" />
+                                        </StackPanel>
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </ScrollViewer>
+            </Grid>
 
             <ui:SnackbarPresenter x:Name="SnackbarPresenter" Grid.Row="1" HorizontalAlignment="Right" VerticalAlignment="Bottom" />
         </Grid>

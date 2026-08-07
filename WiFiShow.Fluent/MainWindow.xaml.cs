@@ -86,6 +86,8 @@ namespace WiFiShow.Fluent
         }
 
         private Wpf.Ui.ISnackbarService _snackbarService;
+        private string _lastSortColumn = "";
+        private System.ComponentModel.ListSortDirection _lastSortDirection = System.ComponentModel.ListSortDirection.Ascending;
 
         public MainWindow()
         {
@@ -239,6 +241,29 @@ namespace WiFiShow.Fluent
                     await WiFiManager.ToggleAutoConnectAsync(profileName, isAuto);
                     _snackbarService.Show("Auto-Connect Updated", $"Auto-Connect is now {(isAuto ? "enabled" : "disabled")} for {profileName}.", Wpf.Ui.Controls.ControlAppearance.Secondary, new Wpf.Ui.Controls.SymbolIcon(Wpf.Ui.Controls.SymbolRegular.Globe24), TimeSpan.FromSeconds(2));
                 }
+            }
+        }
+
+        private void SortColumn_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is Wpf.Ui.Controls.Button btn && btn.Tag is string sortBy)
+            {
+                var view = System.Windows.Data.CollectionViewSource.GetDefaultView(_filteredProfiles);
+                
+                if (_lastSortColumn == sortBy)
+                {
+                    _lastSortDirection = _lastSortDirection == System.ComponentModel.ListSortDirection.Ascending 
+                        ? System.ComponentModel.ListSortDirection.Descending 
+                        : System.ComponentModel.ListSortDirection.Ascending;
+                }
+                else
+                {
+                    _lastSortColumn = sortBy;
+                    _lastSortDirection = System.ComponentModel.ListSortDirection.Ascending;
+                }
+
+                view.SortDescriptions.Clear();
+                view.SortDescriptions.Add(new System.ComponentModel.SortDescription(sortBy, _lastSortDirection));
             }
         }
 
