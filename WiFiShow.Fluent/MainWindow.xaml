@@ -69,7 +69,12 @@
                     </ItemsControl.ItemsPanel>
                     <ItemsControl.ItemTemplate>
                         <DataTemplate>
-                            <ui:Card Width="{Binding ElementName=RootWindow, Path=CardWidth}" Margin="10" Padding="15">
+                            <Border Background="{DynamicResource CardBackgroundFillColorDefaultBrush}" 
+                                    BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}" 
+                                    BorderThickness="1" 
+                                    CornerRadius="4" 
+                                    Width="{Binding ElementName=RootWindow, Path=CardWidth}" 
+                                    Margin="10" Padding="15">
                                 <Grid>
                                     <Grid.RowDefinitions>
                                         <RowDefinition Height="Auto" />
@@ -123,7 +128,7 @@
                                         </StackPanel>
                                     </Grid>
                                 </Grid>
-                            </ui:Card>
+                            </Border>
                         </DataTemplate>
                     </ItemsControl.ItemTemplate>
                 </ItemsControl>
