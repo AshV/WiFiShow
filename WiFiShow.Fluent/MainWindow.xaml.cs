@@ -85,12 +85,18 @@ namespace WiFiShow.Fluent
             set => SetValue(CardWidthProperty, value);
         }
 
+        private Wpf.Ui.ISnackbarService _snackbarService;
+
         public MainWindow()
         {
             InitializeComponent();
             ApplicationThemeManager.Apply(this);
             CardsList.ItemsSource = _filteredProfiles;
             TableList.ItemsSource = _filteredProfiles;
+            
+            _snackbarService = new Wpf.Ui.SnackbarService();
+            _snackbarService.SetSnackbarPresenter(SnackbarPresenter);
+            
             LoadNetworks();
         }
 
@@ -164,6 +170,7 @@ namespace WiFiShow.Fluent
             if (sender is Wpf.Ui.Controls.Button btn && btn.Tag is string pwd && !string.IsNullOrEmpty(pwd))
             {
                 System.Windows.Clipboard.SetText(pwd);
+                _snackbarService.Show("Copied", "Password copied to clipboard.", Wpf.Ui.Controls.ControlAppearance.Success, new Wpf.Ui.Controls.SymbolIcon(Wpf.Ui.Controls.SymbolRegular.Copy24), TimeSpan.FromSeconds(2));
             }
         }
 
@@ -216,7 +223,7 @@ namespace WiFiShow.Fluent
                     
                     csv.WriteRecords(records);
                 }
-                System.Windows.MessageBox.Show("Exported successfully!", "Wi-Fi Show");
+                _snackbarService.Show("Success", "Exported successfully to CSV.", Wpf.Ui.Controls.ControlAppearance.Success, new Wpf.Ui.Controls.SymbolIcon(Wpf.Ui.Controls.SymbolRegular.Document24), TimeSpan.FromSeconds(3));
             }
         }
 
@@ -230,6 +237,7 @@ namespace WiFiShow.Fluent
                     bool isAuto = ts.IsChecked ?? false;
                     profile.IsAutoConnect = isAuto;
                     await WiFiManager.ToggleAutoConnectAsync(profileName, isAuto);
+                    _snackbarService.Show("Auto-Connect Updated", $"Auto-Connect is now {(isAuto ? "enabled" : "disabled")} for {profileName}.", Wpf.Ui.Controls.ControlAppearance.Secondary, new Wpf.Ui.Controls.SymbolIcon(Wpf.Ui.Controls.SymbolRegular.Wifi24), TimeSpan.FromSeconds(2));
                 }
             }
         }
@@ -368,6 +376,7 @@ namespace WiFiShow.Fluent
                 {
                     await WiFiManager.DeleteProfileAsync(profileName);
                     LoadNetworks();
+                    _snackbarService.Show("Deleted", $"Forgot network {profileName}.", Wpf.Ui.Controls.ControlAppearance.Danger, new Wpf.Ui.Controls.SymbolIcon(Wpf.Ui.Controls.SymbolRegular.Delete24), TimeSpan.FromSeconds(3));
                 }
             }
         }
