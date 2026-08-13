@@ -8,7 +8,7 @@ The application uses the built-in Windows `netsh` (Network Shell) utility to int
 ```powershell
 netsh wlan export profile folder="[temp_folder]" key=clear
 ```
-*Purpose*: Extracts all saved Wi-Fi network profiles (SSIDs) on the current system into XML files simultaneously. The app then parses these XML files instantly using Neutralino's filesystem API to gather names, connection modes, auth types, and clear-text passwords. This is massively faster than running individual `netsh show` commands sequentially.
+*Purpose*: Extracts all saved Wi-Fi network profiles (SSIDs) on the current system into XML files simultaneously. The app then parses these XML files using .NET's LINQ-to-XML API to gather names, connection modes, auth types, and clear-text passwords. This is massively faster than running individual `netsh show` commands sequentially.
 
 ## 2. Viewing All Details (ℹ️)
 **UI Action**: Clicking the **ℹ️** (Details) button on a network card.
