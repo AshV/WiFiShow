@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using System.Xml.Linq;
 
@@ -19,73 +20,268 @@ namespace WiFiShow.Fluent
 
     public static class WiFiManager
     {
+        private const uint WLAN_CLIENT_VERSION_VISTA = 2;
+        private const uint WLAN_PROFILE_GET_PLAINTEXT_KEY = 1;
+        private const uint ERROR_SUCCESS = 0;
+
+        [DllImport("wlanapi.dll", SetLastError = true)]
+        private static extern uint WlanOpenHandle(
+            uint dwClientVersion,
+            IntPtr pReserved,
+            out uint pdwNegotiatedVersion,
+            out IntPtr phClientHandle);
+
+        [DllImport("wlanapi.dll", SetLastError = true)]
+        private static extern uint WlanCloseHandle(
+            IntPtr hClientHandle,
+            IntPtr pReserved);
+
+        [DllImport("wlanapi.dll", SetLastError = true)]
+        private static extern uint WlanEnumInterfaces(
+            IntPtr hClientHandle,
+            IntPtr pReserved,
+            out IntPtr ppInterfaceList);
+
+        [DllImport("wlanapi.dll", SetLastError = true, CharSet = CharSet.Unicode)]
+        private static extern uint WlanGetProfileList(
+            IntPtr hClientHandle,
+            ref Guid pInterfaceGuid,
+            IntPtr pReserved,
+            out IntPtr ppProfileList);
+
+        [DllImport("wlanapi.dll", SetLastError = true, CharSet = CharSet.Unicode)]
+        private static extern uint WlanGetProfile(
+            IntPtr hClientHandle,
+            ref Guid pInterfaceGuid,
+            string strProfileName,
+            IntPtr pReserved,
+            out IntPtr pstrProfileXml,
+            ref uint pdwFlags,
+            out uint pdwGrantedAccess);
+
+        [DllImport("wlanapi.dll", SetLastError = true, CharSet = CharSet.Unicode)]
+        private static extern uint WlanDeleteProfile(
+            IntPtr hClientHandle,
+            ref Guid pInterfaceGuid,
+            string strProfileName,
+            IntPtr pReserved);
+
+        [DllImport("wlanapi.dll")]
+        private static extern void WlanFreeMemory(IntPtr pMemory);
+
+        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+        private struct WLAN_INTERFACE_INFO
+        {
+            public Guid InterfaceGuid;
+            [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 256)]
+            public string strInterfaceDescription;
+            public int isState;
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        private struct WLAN_INTERFACE_INFO_LIST
+        {
+            public uint dwNumberOfItems;
+            public uint dwIndex;
+        }
+
+        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+        private struct WLAN_PROFILE_INFO
+        {
+            [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 256)]
+            public string strProfileName;
+            public uint dwFlags;
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        private struct WLAN_PROFILE_INFO_LIST
+        {
+            public uint dwNumberOfItems;
+            public uint dwIndex;
+        }
+
         public static async Task<List<WiFiProfile>> GetWiFiProfilesAsync()
         {
             return await Task.Run(() =>
             {
                 var profiles = new List<WiFiProfile>();
-                string tempFolder = Path.Combine(Path.GetTempPath(), "WiFiShowExport");
+                var seenNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
-                if (!Directory.Exists(tempFolder))
+                try
                 {
-                    Directory.CreateDirectory(tempFolder);
-                }
-                else
-                {
-                    // Clean up old files
-                    foreach (var file in Directory.GetFiles(tempFolder))
+                    uint status = WlanOpenHandle(WLAN_CLIENT_VERSION_VISTA, IntPtr.Zero, out _, out IntPtr clientHandle);
+                    if (status == ERROR_SUCCESS)
                     {
-                        try { File.Delete(file); } catch { }
+                        try
+                        {
+                            status = WlanEnumInterfaces(clientHandle, IntPtr.Zero, out IntPtr pInterfaceList);
+                            if (status == ERROR_SUCCESS && pInterfaceList != IntPtr.Zero)
+                            {
+                                try
+                                {
+                                    var ifListHeader = Marshal.PtrToStructure<WLAN_INTERFACE_INFO_LIST>(pInterfaceList);
+                                    int ifInfoSize = Marshal.SizeOf<WLAN_INTERFACE_INFO>();
+                                    IntPtr currentIfPtr = new IntPtr(pInterfaceList.ToInt64() + 8);
+
+                                    for (int i = 0; i < ifListHeader.dwNumberOfItems; i++)
+                                    {
+                                        var ifInfo = Marshal.PtrToStructure<WLAN_INTERFACE_INFO>(currentIfPtr);
+                                        Guid ifGuid = ifInfo.InterfaceGuid;
+
+                                        uint profileStatus = WlanGetProfileList(clientHandle, ref ifGuid, IntPtr.Zero, out IntPtr pProfileList);
+                                        if (profileStatus == ERROR_SUCCESS && pProfileList != IntPtr.Zero)
+                                        {
+                                            try
+                                            {
+                                                var profListHeader = Marshal.PtrToStructure<WLAN_PROFILE_INFO_LIST>(pProfileList);
+                                                int profInfoSize = Marshal.SizeOf<WLAN_PROFILE_INFO>();
+                                                IntPtr currentProfPtr = new IntPtr(pProfileList.ToInt64() + 8);
+
+                                                for (int j = 0; j < profListHeader.dwNumberOfItems; j++)
+                                                {
+                                                    var profInfo = Marshal.PtrToStructure<WLAN_PROFILE_INFO>(currentProfPtr);
+                                                    string profileName = profInfo.strProfileName;
+
+                                                    if (!string.IsNullOrEmpty(profileName) && seenNames.Add(profileName))
+                                                    {
+                                                        uint flags = WLAN_PROFILE_GET_PLAINTEXT_KEY;
+                                                        uint getProfStatus = WlanGetProfile(
+                                                            clientHandle,
+                                                            ref ifGuid,
+                                                            profileName,
+                                                            IntPtr.Zero,
+                                                            out IntPtr pXml,
+                                                            ref flags,
+                                                            out _);
+
+                                                        if (getProfStatus == ERROR_SUCCESS && pXml != IntPtr.Zero)
+                                                        {
+                                                            try
+                                                            {
+                                                                string? xmlContent = Marshal.PtrToStringUni(pXml);
+                                                                if (!string.IsNullOrEmpty(xmlContent))
+                                                                {
+                                                                    var profile = ParseProfileXml(xmlContent, profileName);
+                                                                    if (profile != null)
+                                                                    {
+                                                                        profiles.Add(profile);
+                                                                    }
+                                                                }
+                                                            }
+                                                            finally
+                                                            {
+                                                                WlanFreeMemory(pXml);
+                                                            }
+                                                        }
+                                                    }
+
+                                                    currentProfPtr = new IntPtr(currentProfPtr.ToInt64() + profInfoSize);
+                                                }
+                                            }
+                                            finally
+                                            {
+                                                WlanFreeMemory(pProfileList);
+                                            }
+                                        }
+
+                                        currentIfPtr = new IntPtr(currentIfPtr.ToInt64() + ifInfoSize);
+                                    }
+                                }
+                                finally
+                                {
+                                    WlanFreeMemory(pInterfaceList);
+                                }
+                            }
+                        }
+                        finally
+                        {
+                            WlanCloseHandle(clientHandle, IntPtr.Zero);
+                        }
                     }
                 }
+                catch
+                {
+                    // Fallback to netsh if native API fails
+                    return GetWiFiProfilesNetshFallback();
+                }
 
-                // Export profiles
+                if (profiles.Count == 0)
+                {
+                    return GetWiFiProfilesNetshFallback();
+                }
+
+                return profiles;
+            });
+        }
+
+        private static WiFiProfile? ParseProfileXml(string xmlContent, string fallbackName)
+        {
+            try
+            {
+                var xml = XDocument.Parse(xmlContent);
+                XNamespace ns = "http://www.microsoft.com/networking/WLAN/profile/v1";
+
+                string name = xml.Root?.Element(ns + "name")?.Value ?? fallbackName;
+                string ssid = xml.Root?.Element(ns + "SSIDConfig")?.Element(ns + "SSID")?.Element(ns + "name")?.Value ?? name;
+                string connectionMode = xml.Root?.Element(ns + "connectionMode")?.Value ?? "manual";
+                bool isAuto = connectionMode.Equals("auto", StringComparison.OrdinalIgnoreCase);
+
+                var security = xml.Root?.Element(ns + "MSM")?.Element(ns + "security");
+                string authType = security?.Element(ns + "authEncryption")?.Element(ns + "authentication")?.Value ?? string.Empty;
+
+                string password = string.Empty;
+                var sharedKey = security?.Element(ns + "sharedKey");
+                if (sharedKey != null)
+                {
+                    password = sharedKey.Element(ns + "keyMaterial")?.Value ?? string.Empty;
+                }
+
+                return new WiFiProfile
+                {
+                    Name = name,
+                    Ssid = ssid,
+                    Password = password,
+                    AuthType = authType,
+                    IsAutoConnect = isAuto,
+                    ConnectionMode = connectionMode
+                };
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+        private static List<WiFiProfile> GetWiFiProfilesNetshFallback()
+        {
+            var profiles = new List<WiFiProfile>();
+            string tempFolder = Path.Combine(Path.GetTempPath(), "WiFiShowExport_" + Guid.NewGuid().ToString("N"));
+
+            try
+            {
+                Directory.CreateDirectory(tempFolder);
                 RunCommand("netsh", $"wlan export profile folder=\"{tempFolder}\" key=clear");
 
-                // Parse XML files
                 foreach (var file in Directory.GetFiles(tempFolder, "*.xml"))
                 {
                     try
                     {
-                        var xml = XDocument.Load(file);
-                        XNamespace ns = "http://www.microsoft.com/networking/WLAN/profile/v1";
-
-                        string name = xml.Root?.Element(ns + "name")?.Value ?? string.Empty;
-                        string ssid = xml.Root?.Element(ns + "SSIDConfig")?.Element(ns + "SSID")?.Element(ns + "name")?.Value ?? name;
-                        string connectionMode = xml.Root?.Element(ns + "connectionMode")?.Value ?? "manual";
-                        bool isAuto = connectionMode.Equals("auto", StringComparison.OrdinalIgnoreCase);
-                        
-                        var security = xml.Root?.Element(ns + "MSM")?.Element(ns + "security");
-                        string authType = security?.Element(ns + "authEncryption")?.Element(ns + "authentication")?.Value ?? string.Empty;
-                        
-                        string password = string.Empty;
-                        var sharedKey = security?.Element(ns + "sharedKey");
-                        if (sharedKey != null)
+                        string content = File.ReadAllText(file);
+                        var profile = ParseProfileXml(content, Path.GetFileNameWithoutExtension(file));
+                        if (profile != null)
                         {
-                            password = sharedKey.Element(ns + "keyMaterial")?.Value ?? string.Empty;
+                            profiles.Add(profile);
                         }
-
-                        profiles.Add(new WiFiProfile
-                        {
-                            Name = name,
-                            Ssid = ssid,
-                            Password = password,
-                            AuthType = authType,
-                            IsAutoConnect = isAuto,
-                            ConnectionMode = connectionMode
-                        });
                     }
-                    catch
-                    {
-                        // Ignore parsing errors for individual files
-                    }
+                    catch { }
                 }
-
-                // Clean up
+            }
+            finally
+            {
                 try { Directory.Delete(tempFolder, true); } catch { }
+            }
 
-                return profiles;
-            });
+            return profiles;
         }
 
         public static async Task ToggleAutoConnectAsync(string profileName, bool autoConnect)
@@ -101,7 +297,46 @@ namespace WiFiShow.Fluent
         {
             await Task.Run(() =>
             {
-                RunCommand("netsh", $"wlan delete profile name=\"{profileName}\"");
+                try
+                {
+                    uint status = WlanOpenHandle(WLAN_CLIENT_VERSION_VISTA, IntPtr.Zero, out _, out IntPtr clientHandle);
+                    if (status == ERROR_SUCCESS)
+                    {
+                        try
+                        {
+                            status = WlanEnumInterfaces(clientHandle, IntPtr.Zero, out IntPtr pInterfaceList);
+                            if (status == ERROR_SUCCESS && pInterfaceList != IntPtr.Zero)
+                            {
+                                try
+                                {
+                                    var ifListHeader = Marshal.PtrToStructure<WLAN_INTERFACE_INFO_LIST>(pInterfaceList);
+                                    int ifInfoSize = Marshal.SizeOf<WLAN_INTERFACE_INFO>();
+                                    IntPtr currentIfPtr = new IntPtr(pInterfaceList.ToInt64() + 8);
+
+                                    for (int i = 0; i < ifListHeader.dwNumberOfItems; i++)
+                                    {
+                                        var ifInfo = Marshal.PtrToStructure<WLAN_INTERFACE_INFO>(currentIfPtr);
+                                        Guid ifGuid = ifInfo.InterfaceGuid;
+                                        WlanDeleteProfile(clientHandle, ref ifGuid, profileName, IntPtr.Zero);
+                                        currentIfPtr = new IntPtr(currentIfPtr.ToInt64() + ifInfoSize);
+                                    }
+                                }
+                                finally
+                                {
+                                    WlanFreeMemory(pInterfaceList);
+                                }
+                            }
+                        }
+                        finally
+                        {
+                            WlanCloseHandle(clientHandle, IntPtr.Zero);
+                        }
+                    }
+                }
+                catch
+                {
+                    RunCommand("netsh", $"wlan delete profile name=\"{profileName}\"");
+                }
             });
         }
 

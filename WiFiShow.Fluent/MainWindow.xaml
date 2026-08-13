@@ -8,26 +8,45 @@
         mc:Ignorable="d"
         Title="Wi-Fi Show" Height="600" Width="800"
         WindowStartupLocation="CenterScreen"
-        WindowBackdropType="None"
+        WindowBackdropType="Mica"
         ExtendsContentIntoTitleBar="True"
         WindowCornerPreference="Round">
 
     <Grid Background="{DynamicResource ApplicationBackgroundBrush}">
-        <Grid x:Name="AuroraBackground" ClipToBounds="True">
-            <Grid.Effect>
-                <BlurEffect Radius="120" KernelType="Gaussian"/>
-            </Grid.Effect>
-            <Ellipse Fill="#309C27B0" Width="800" Height="800" HorizontalAlignment="Left" VerticalAlignment="Top">
+        <!-- High-Performance GPU Radial Gradient Aurora Mesh (Zero CPU Blur Overhead) -->
+        <Grid x:Name="AuroraBackground" ClipToBounds="True" IsHitTestVisible="False">
+            <Ellipse Width="800" Height="800" HorizontalAlignment="Left" VerticalAlignment="Top">
+                <Ellipse.Fill>
+                    <RadialGradientBrush Center="0.5,0.5" GradientOrigin="0.5,0.5" RadiusX="0.5" RadiusY="0.5">
+                        <GradientStop Color="#2A9C27B0" Offset="0"/>
+                        <GradientStop Color="#109C27B0" Offset="0.55"/>
+                        <GradientStop Color="#009C27B0" Offset="1"/>
+                    </RadialGradientBrush>
+                </Ellipse.Fill>
                 <Ellipse.RenderTransform>
                     <TranslateTransform x:Name="Ellipse1Transform" />
                 </Ellipse.RenderTransform>
             </Ellipse>
-            <Ellipse Fill="#301976D2" Width="900" Height="900" HorizontalAlignment="Right" VerticalAlignment="Bottom">
+            <Ellipse Width="900" Height="900" HorizontalAlignment="Right" VerticalAlignment="Bottom">
+                <Ellipse.Fill>
+                    <RadialGradientBrush Center="0.5,0.5" GradientOrigin="0.5,0.5" RadiusX="0.5" RadiusY="0.5">
+                        <GradientStop Color="#2A1976D2" Offset="0"/>
+                        <GradientStop Color="#101976D2" Offset="0.55"/>
+                        <GradientStop Color="#001976D2" Offset="1"/>
+                    </RadialGradientBrush>
+                </Ellipse.Fill>
                 <Ellipse.RenderTransform>
                     <TranslateTransform x:Name="Ellipse2Transform" />
                 </Ellipse.RenderTransform>
             </Ellipse>
-            <Ellipse Fill="#3000BCD4" Width="700" Height="700" HorizontalAlignment="Center" VerticalAlignment="Center">
+            <Ellipse Width="700" Height="700" HorizontalAlignment="Center" VerticalAlignment="Center">
+                <Ellipse.Fill>
+                    <RadialGradientBrush Center="0.5,0.5" GradientOrigin="0.5,0.5" RadiusX="0.5" RadiusY="0.5">
+                        <GradientStop Color="#2A00BCD4" Offset="0"/>
+                        <GradientStop Color="#1000BCD4" Offset="0.55"/>
+                        <GradientStop Color="#0000BCD4" Offset="1"/>
+                    </RadialGradientBrush>
+                </Ellipse.Fill>
                 <Ellipse.RenderTransform>
                     <TranslateTransform x:Name="Ellipse3Transform" />
                 </Ellipse.RenderTransform>
@@ -52,175 +71,197 @@
         
         <Grid>
             <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="*"/>
-        </Grid.RowDefinitions>
-
-        <ui:TitleBar x:Name="MainTitleBar" Grid.Row="0" Title="Wi-Fi Show" FontSize="18" Height="40" Padding="10,0">
-            <!-- Actions placed in the titlebar area for a cleaner look, or just below it -->
-        </ui:TitleBar>
-
-        <Grid Grid.Row="1" Margin="24">
-            <Grid.RowDefinitions>
-                <RowDefinition Height="Auto" />
-                <RowDefinition Height="*" />
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
             </Grid.RowDefinitions>
-            
-            <Grid Grid.Row="0" Margin="0,0,0,24">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*" />
-                    <ColumnDefinition Width="Auto" />
-                </Grid.ColumnDefinitions>
 
-                <Grid Grid.Column="0" Margin="0,0,24,0">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="Auto" />
-                        <ColumnDefinition Width="*" />
-                    </Grid.ColumnDefinitions>
-                    
-                    <Border Grid.Column="0" Width="32" Height="32" CornerRadius="8" ClipToBounds="True" Margin="0,0,15,0" VerticalAlignment="Center">
-                        <Image Source="pack://application:,,,/appIcon.png" Stretch="UniformToFill" RenderOptions.BitmapScalingMode="HighQuality" />
-                    </Border>
-                    
-                    <ui:TextBox Grid.Column="1" x:Name="SearchBox" HorizontalAlignment="Stretch" VerticalAlignment="Center"
-                                PlaceholderText="Search SSID..." Icon="{ui:SymbolIcon Search24}"
-                                TextChanged="SearchBox_TextChanged" />
-                </Grid>
+            <ui:TitleBar x:Name="MainTitleBar" Grid.Row="0" Title="Wi-Fi Show" FontSize="18" Height="40" Padding="10,0" />
 
-                <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
-                    <ui:Button x:Name="ViewToggleBtn" Margin="0,0,10,0" Click="ViewToggleBtn_Click" 
-                               Padding="12,6"
-                               Icon="{ui:SymbolIcon Grid24}" ToolTip="Toggle View" />
-                    
-                    <ui:Button x:Name="ToggleAllBtn" Margin="0,0,10,0" Click="ToggleAllBtn_Click"
-                               Padding="12,6"
-                               Icon="{ui:SymbolIcon Eye24}" Content="Show All" />
-                               
-                    <ui:Button Margin="0,0,10,0" Click="ExportBtn_Click"
-                               Padding="12,6"
-                               Icon="{ui:SymbolIcon Save24}" Content="Export CSV" />
-                               
-                    <ui:Button Click="RefreshBtn_Click"
-                               Padding="12,6"
-                               Icon="{ui:SymbolIcon ArrowClockwise24}" Content="Refresh" />
-                </StackPanel>
-            </Grid>
-
-            <ui:ProgressRing x:Name="LoadingSpinner" IsIndeterminate="True" 
-                             Grid.Row="1" Visibility="Collapsed" 
-                             HorizontalAlignment="Center" VerticalAlignment="Center" />
-
-            <ScrollViewer x:Name="CardsView" Grid.Row="1" Visibility="Collapsed" VerticalScrollBarVisibility="Auto" SizeChanged="CardsView_SizeChanged">
-                <ItemsControl x:Name="CardsList">
-                    <ItemsControl.ItemsPanel>
-                        <ItemsPanelTemplate>
-                            <WrapPanel />
-                        </ItemsPanelTemplate>
-                    </ItemsControl.ItemsPanel>
-                    <ItemsControl.ItemTemplate>
-                        <DataTemplate>
-                            <Border Background="{DynamicResource CardBackgroundFillColorDefaultBrush}" 
-                                    BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}" 
-                                    BorderThickness="1" 
-                                    CornerRadius="4" 
-                                    Opacity="0.65"
-                                    Width="{Binding RelativeSource={RelativeSource AncestorType=Window}, Path=CardWidth}" 
-                                    Margin="10">
-                                <Grid Margin="15">
-                                    <Grid.RowDefinitions>
-                                        <RowDefinition Height="Auto" />
-                                        <RowDefinition Height="Auto" />
-                                        <RowDefinition Height="Auto" />
-                                    </Grid.RowDefinitions>
-                                    
-                                    <Grid Grid.Row="0">
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="*" />
-                                            <ColumnDefinition Width="Auto" />
-                                        </Grid.ColumnDefinitions>
-                                        <TextBlock Grid.Column="0" Text="{Binding Ssid}" FontSize="18" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
-                                        <StackPanel Grid.Column="1" Orientation="Horizontal" Opacity="0.7">
-                                            <ui:SymbolIcon Symbol="Shield24" Margin="0,0,4,0" FontSize="14" />
-                                            <TextBlock Text="{Binding AuthType}" FontSize="12" VerticalAlignment="Center" />
-                                        </StackPanel>
-                                    </Grid>
-                                    
-                                    <Border Grid.Row="1" Background="{DynamicResource ControlFillColorDefaultBrush}" CornerRadius="4" Margin="0,12,0,0">
-                                        <Grid Margin="10,5">
-                                            <Grid.ColumnDefinitions>
-                                                <ColumnDefinition Width="Auto" />
-                                                <ColumnDefinition Width="*" />
-                                                <ColumnDefinition Width="Auto" />
-                                            </Grid.ColumnDefinitions>
-                                            <ui:SymbolIcon Grid.Column="0" Symbol="Key24" Margin="0,0,5,0" />
-                                            <TextBox Grid.Column="1" Text="{Binding Password, Mode=OneWay}" IsReadOnly="True" BorderThickness="0" 
-                                                     VerticalAlignment="Center" FontFamily="Consolas" Background="Transparent" />
-                                            <StackPanel Grid.Column="2" Orientation="Horizontal">
-                                                <ui:Button Appearance="Transparent" Padding="4" ToolTip="Copy Password" Tag="{Binding RealPassword}" Click="CopyPassword_Click" Icon="{ui:SymbolIcon Copy24}"/>
-                                                <ui:Button Appearance="Transparent" Padding="4" ToolTip="Toggle Visibility" Tag="{Binding Name}" Click="ToggleSinglePassword_Click" Icon="{ui:SymbolIcon Eye24}"/>
-                                            </StackPanel>
-                                        </Grid>
-                                    </Border>
-                                    
-                                    <Grid Grid.Row="2" Margin="0,15,0,0">
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="*" />
-                                            <ColumnDefinition Width="Auto" />
-                                        </Grid.ColumnDefinitions>
-                                        
-                                        <ui:ToggleSwitch Grid.Column="0" ToolTip="Auto-Connect"
-                                                         IsChecked="{Binding IsAutoConnect, Mode=OneWay}" 
-                                                         Tag="{Binding Name}"
-                                                         Click="AutoConnectToggle_Click" />
-
-                                        <StackPanel Orientation="Horizontal" Grid.Column="1" HorizontalAlignment="Right">
-                                            <ui:Button ToolTip="Show QR" Tag="{Binding Name}" Click="QRBtn_Click" 
-                                                       Icon="{ui:SymbolIcon QrCode24}" Appearance="Transparent" Margin="0,0,4,0"/>
-                                            <ui:Button ToolTip="Details" Tag="{Binding Name}" Click="DetailsBtn_Click" 
-                                                       Icon="{ui:SymbolIcon Info24}" Appearance="Transparent" Margin="0,0,4,0"/>
-                                            <ui:Button ToolTip="Forget Network" Tag="{Binding Name}" Click="DeleteBtn_Click" 
-                                                       Icon="{ui:SymbolIcon Delete24}" Appearance="Secondary" />
-                                        </StackPanel>
-                                    </Grid>
-                                </Grid>
-                                </Border>
-                        </DataTemplate>
-                    </ItemsControl.ItemTemplate>
-                </ItemsControl>
-            </ScrollViewer>
-
-            <Grid Grid.Row="1" x:Name="TableView" Grid.IsSharedSizeScope="True">
+            <Grid Grid.Row="1" Margin="24">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto" />
                     <RowDefinition Height="*" />
                 </Grid.RowDefinitions>
                 
-                <Grid Grid.Row="0" Margin="10,0,10,0">
-                    <Border Background="{DynamicResource CardBackgroundFillColorDefaultBrush}" Opacity="0.65" CornerRadius="4" BorderBrush="{DynamicResource DividerStrokeColorDefaultBrush}" BorderThickness="0,0,0,1" />
-                    <Grid Margin="15,10">
+                <Grid Grid.Row="0" Margin="0,0,0,24">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+
+                    <Grid Grid.Column="0" Margin="0,0,24,0">
                         <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="Auto" SharedSizeGroup="IconCol" />
+                            <ColumnDefinition Width="Auto" />
                             <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="Auto" SharedSizeGroup="AutoCol" />
-                            <ColumnDefinition Width="Auto" SharedSizeGroup="ActionsCol" />
                         </Grid.ColumnDefinitions>
                         
-                        <!-- Empty spacer for the icon -->
-                        <Border Grid.Column="0" Width="39" />
-                        <ui:Button Grid.Column="1" Content="SSID / Auth" Tag="Ssid" Appearance="Transparent" Click="SortColumn_Click" Padding="5" FontWeight="SemiBold" />
-                        <TextBlock Grid.Column="2" Text="Password" VerticalAlignment="Center" FontWeight="SemiBold" Opacity="0.7" Margin="5,0,0,0" />
-                        <ui:Button Grid.Column="3" Content="Auto-Connect" Tag="IsAutoConnect" Appearance="Transparent" Click="SortColumn_Click" Padding="5" FontWeight="SemiBold" Margin="0,0,15,0" />
-                        <TextBlock Grid.Column="4" Text="Actions" VerticalAlignment="Center" FontWeight="SemiBold" Opacity="0.7" TextAlignment="Center" Width="100" />
+                        <Border Grid.Column="0" Width="32" Height="32" CornerRadius="8" ClipToBounds="True" Margin="0,0,15,0" VerticalAlignment="Center">
+                            <Image Source="pack://application:,,,/appIcon.png" Stretch="UniformToFill" RenderOptions.BitmapScalingMode="HighQuality" />
+                        </Border>
+                        
+                        <ui:TextBox Grid.Column="1" x:Name="SearchBox" HorizontalAlignment="Stretch" VerticalAlignment="Center"
+                                    PlaceholderText="Search SSID or security..." Icon="{ui:SymbolIcon Search24}"
+                                    TextChanged="SearchBox_TextChanged" />
                     </Grid>
+
+                    <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                        <ui:Button x:Name="ViewToggleBtn" Margin="0,0,10,0" Click="ViewToggleBtn_Click" 
+                                   Padding="12,6"
+                                   Icon="{ui:SymbolIcon Grid24}" ToolTip="Toggle View" />
+                        
+                        <ui:Button x:Name="ToggleAllBtn" Margin="0,0,10,0" Click="ToggleAllBtn_Click"
+                                   Padding="12,6"
+                                   Icon="{ui:SymbolIcon Eye24}" Content="Show All" />
+                                   
+                        <ui:Button Margin="0,0,10,0" Click="ExportBtn_Click"
+                                   Padding="12,6"
+                                   Icon="{ui:SymbolIcon Save24}" Content="Export CSV" />
+                                   
+                        <ui:Button Click="RefreshBtn_Click"
+                                   Padding="12,6"
+                                   Icon="{ui:SymbolIcon ArrowClockwise24}" Content="Refresh" />
+                    </StackPanel>
                 </Grid>
 
-                <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
-                    <ItemsControl x:Name="TableList">
+                <ui:ProgressRing x:Name="LoadingSpinner" IsIndeterminate="True" 
+                                 Grid.Row="1" Visibility="Collapsed" 
+                                 HorizontalAlignment="Center" VerticalAlignment="Center" />
+
+                <!-- Cards View -->
+                <ScrollViewer x:Name="CardsView" Grid.Row="1" Visibility="Collapsed" VerticalScrollBarVisibility="Auto" SizeChanged="CardsView_SizeChanged">
+                    <ItemsControl x:Name="CardsList">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <WrapPanel />
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
                         <ItemsControl.ItemTemplate>
                             <DataTemplate>
-                                <Grid Margin="10,8,10,0">
-                                    <Border Background="{DynamicResource CardBackgroundFillColorDefaultBrush}" Opacity="0.65" CornerRadius="4" BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}" BorderThickness="1" />
+                                <Border Background="{DynamicResource CardBackgroundFillColorDefaultBrush}" 
+                                        BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}" 
+                                        BorderThickness="1" 
+                                        CornerRadius="6" 
+                                        Opacity="0.85"
+                                        Width="{Binding RelativeSource={RelativeSource AncestorType=Window}, Path=CardWidth}" 
+                                        Margin="8">
+                                    <Grid Margin="15">
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="Auto" />
+                                            <RowDefinition Height="Auto" />
+                                            <RowDefinition Height="Auto" />
+                                        </Grid.RowDefinitions>
+                                        
+                                        <Grid Grid.Row="0">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="Auto" />
+                                            </Grid.ColumnDefinitions>
+                                            <TextBlock Grid.Column="0" Text="{Binding Ssid}" FontSize="18" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                                            <StackPanel Grid.Column="1" Orientation="Horizontal" Opacity="0.7">
+                                                <ui:SymbolIcon Symbol="Shield24" Margin="0,0,4,0" FontSize="14" />
+                                                <TextBlock Text="{Binding AuthType}" FontSize="12" VerticalAlignment="Center" />
+                                            </StackPanel>
+                                        </Grid>
+                                        
+                                        <Border Grid.Row="1" Background="{DynamicResource ControlFillColorDefaultBrush}" CornerRadius="4" Margin="0,12,0,0">
+                                            <Grid Margin="10,5">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="Auto" />
+                                                    <ColumnDefinition Width="*" />
+                                                    <ColumnDefinition Width="Auto" />
+                                                </Grid.ColumnDefinitions>
+                                                <ui:SymbolIcon Grid.Column="0" Symbol="Key24" Margin="0,0,5,0" />
+                                                <TextBox Grid.Column="1" Text="{Binding Password, Mode=OneWay}" IsReadOnly="True" BorderThickness="0" 
+                                                         VerticalAlignment="Center" FontFamily="Consolas" Background="Transparent" />
+                                                <StackPanel Grid.Column="2" Orientation="Horizontal">
+                                                    <ui:Button Appearance="Transparent" Padding="4" ToolTip="Copy Password" Tag="{Binding RealPassword}" Click="CopyPassword_Click" Icon="{ui:SymbolIcon Copy24}"/>
+                                                    <ui:Button Appearance="Transparent" Padding="4" ToolTip="Toggle Visibility" Tag="{Binding Name}" Click="ToggleSinglePassword_Click" Icon="{ui:SymbolIcon Eye24}"/>
+                                                </StackPanel>
+                                            </Grid>
+                                        </Border>
+                                        
+                                        <Grid Grid.Row="2" Margin="0,15,0,0">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="Auto" />
+                                            </Grid.ColumnDefinitions>
+                                            
+                                            <ui:ToggleSwitch Grid.Column="0" ToolTip="Auto-Connect"
+                                                             IsChecked="{Binding IsAutoConnect, Mode=OneWay}" 
+                                                             Tag="{Binding Name}"
+                                                             Click="AutoConnectToggle_Click" />
+
+                                            <StackPanel Orientation="Horizontal" Grid.Column="1" HorizontalAlignment="Right">
+                                                <ui:Button ToolTip="Show QR" Tag="{Binding Name}" Click="QRBtn_Click" 
+                                                           Icon="{ui:SymbolIcon QrCode24}" Appearance="Transparent" Margin="0,0,4,0"/>
+                                                <ui:Button ToolTip="Details" Tag="{Binding Name}" Click="DetailsBtn_Click" 
+                                                           Icon="{ui:SymbolIcon Info24}" Appearance="Transparent" Margin="0,0,4,0"/>
+                                                <ui:Button ToolTip="Forget Network" Tag="{Binding Name}" Click="DeleteBtn_Click" 
+                                                           Icon="{ui:SymbolIcon Delete24}" Appearance="Secondary" />
+                                            </StackPanel>
+                                        </Grid>
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </ScrollViewer>
+
+                <!-- Table View (Virtualized ListView for Ultra-Smooth Scrolling) -->
+                <Grid Grid.Row="1" x:Name="TableView" Grid.IsSharedSizeScope="True">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
+                    
+                    <Grid Grid.Row="0" Margin="10,0,10,0">
+                        <Border Background="{DynamicResource CardBackgroundFillColorDefaultBrush}" Opacity="0.8" CornerRadius="4" BorderBrush="{DynamicResource DividerStrokeColorDefaultBrush}" BorderThickness="0,0,0,1" />
+                        <Grid Margin="15,10">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" SharedSizeGroup="IconCol" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" SharedSizeGroup="AutoCol" />
+                                <ColumnDefinition Width="Auto" SharedSizeGroup="ActionsCol" />
+                            </Grid.ColumnDefinitions>
+                            
+                            <Border Grid.Column="0" Width="39" />
+                            <ui:Button Grid.Column="1" Content="SSID / Auth" Tag="Ssid" Appearance="Transparent" Click="SortColumn_Click" Padding="5" FontWeight="SemiBold" />
+                            <TextBlock Grid.Column="2" Text="Password" VerticalAlignment="Center" FontWeight="SemiBold" Opacity="0.7" Margin="5,0,0,0" />
+                            <ui:Button Grid.Column="3" Content="Auto-Connect" Tag="IsAutoConnect" Appearance="Transparent" Click="SortColumn_Click" Padding="5" FontWeight="SemiBold" Margin="0,0,15,0" />
+                            <TextBlock Grid.Column="4" Text="Actions" VerticalAlignment="Center" FontWeight="SemiBold" Opacity="0.7" TextAlignment="Center" Width="100" />
+                        </Grid>
+                    </Grid>
+
+                    <ListBox x:Name="TableList" Grid.Row="1"
+                             Background="Transparent"
+                             BorderThickness="0"
+                             Padding="0"
+                             VirtualizingStackPanel.IsVirtualizing="True"
+                             VirtualizingStackPanel.VirtualizationMode="Recycling"
+                             VirtualizingStackPanel.ScrollUnit="Pixel"
+                             ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                             ScrollViewer.VerticalScrollBarVisibility="Auto">
+                        <ListBox.ItemContainerStyle>
+                            <Style TargetType="ListBoxItem">
+                                <Setter Property="Padding" Value="0"/>
+                                <Setter Property="Margin" Value="0"/>
+                                <Setter Property="Background" Value="Transparent"/>
+                                <Setter Property="BorderThickness" Value="0"/>
+                                <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+                                <Setter Property="Template">
+                                    <Setter.Value>
+                                        <ControlTemplate TargetType="ListBoxItem">
+                                            <ContentPresenter />
+                                        </ControlTemplate>
+                                    </Setter.Value>
+                                </Setter>
+                            </Style>
+                        </ListBox.ItemContainerStyle>
+                        <ListBox.ItemTemplate>
+                            <DataTemplate>
+                                <Grid Margin="10,6,10,0">
+                                    <Border Background="{DynamicResource CardBackgroundFillColorDefaultBrush}" Opacity="0.8" CornerRadius="4" BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}" BorderThickness="1" />
                                     <Grid Margin="15,10">
                                         <Grid.ColumnDefinitions>
                                             <ColumnDefinition Width="Auto" SharedSizeGroup="IconCol" />
@@ -238,7 +279,7 @@
                                         </StackPanel>
                                         
                                         <Grid Grid.Column="2" Margin="0,0,15,0" VerticalAlignment="Center">
-                                            <Border Background="{DynamicResource ControlFillColorDefaultBrush}" Opacity="0.5" CornerRadius="4" />
+                                            <Border Background="{DynamicResource ControlFillColorDefaultBrush}" Opacity="0.6" CornerRadius="4" />
                                             <Grid Margin="5">
                                                 <Grid.ColumnDefinitions>
                                                     <ColumnDefinition Width="Auto" />
@@ -272,13 +313,12 @@
                                     </Grid>
                                 </Grid>
                             </DataTemplate>
-                        </ItemsControl.ItemTemplate>
-                    </ItemsControl>
-                </ScrollViewer>
-            </Grid>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+                </Grid>
 
-            <ui:SnackbarPresenter x:Name="SnackbarPresenter" Grid.Row="1" HorizontalAlignment="Right" VerticalAlignment="Bottom" />
+                <ui:SnackbarPresenter x:Name="SnackbarPresenter" Grid.Row="1" HorizontalAlignment="Right" VerticalAlignment="Bottom" />
+            </Grid>
         </Grid>
-    </Grid>
     </Grid>
 </ui:FluentWindow>

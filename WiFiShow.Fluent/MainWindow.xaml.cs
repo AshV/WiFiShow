@@ -2,26 +2,26 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
-using System.Drawing;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Controls.Primitives;
+using System.Windows.Data;
 using System.Windows.Media.Imaging;
 using CsvHelper;
-using QRCoder;
 using Microsoft.Win32;
-using System.Globalization;
-using Wpf.Ui.Controls;
+using QRCoder;
 using Wpf.Ui.Appearance;
+using Wpf.Ui.Controls;
 
 namespace WiFiShow.Fluent
 {
     public class WiFiProfileViewModel : INotifyPropertyChanged
     {
-        private WiFiProfile _profile;
+        private readonly WiFiProfile _profile;
         private bool _showPassword;
 
         public WiFiProfileViewModel(WiFiProfile profile)
@@ -72,8 +72,8 @@ namespace WiFiShow.Fluent
 
     public partial class MainWindow : FluentWindow
     {
-        private ObservableCollection<WiFiProfileViewModel> _allProfiles = new ObservableCollection<WiFiProfileViewModel>();
-        private ObservableCollection<WiFiProfileViewModel> _filteredProfiles = new ObservableCollection<WiFiProfileViewModel>();
+        private readonly ObservableCollection<WiFiProfileViewModel> _allProfiles = new();
+        private readonly ICollectionView _profilesView;
         private bool _showAllPasswords = false;
 
         public static readonly DependencyProperty CardWidthProperty =
@@ -85,61 +85,69 @@ namespace WiFiShow.Fluent
             set => SetValue(CardWidthProperty, value);
         }
 
-        private Wpf.Ui.ISnackbarService _snackbarService;
-        private string _lastSortColumn = "";
-        private System.ComponentModel.ListSortDirection _lastSortDirection = System.ComponentModel.ListSortDirection.Ascending;
+        private readonly Wpf.Ui.ISnackbarService _snackbarService;
+        private string _lastSortColumn = string.Empty;
+        private ListSortDirection _lastSortDirection = ListSortDirection.Ascending;
 
         public MainWindow()
         {
             InitializeComponent();
             ApplicationThemeManager.Apply(this);
-            CardsList.ItemsSource = _filteredProfiles;
-            TableList.ItemsSource = _filteredProfiles;
-            
+
+            _profilesView = CollectionViewSource.GetDefaultView(_allProfiles);
+            _profilesView.Filter = FilterProfile;
+
+            CardsList.ItemsSource = _profilesView;
+            TableList.ItemsSource = _profilesView;
+
             _snackbarService = new Wpf.Ui.SnackbarService();
             _snackbarService.SetSnackbarPresenter(SnackbarPresenter);
-            
+
             LoadNetworks();
+        }
+
+        private bool FilterProfile(object item)
+        {
+            if (item is not WiFiProfileViewModel profile) return false;
+            string query = SearchBox.Text;
+            if (string.IsNullOrWhiteSpace(query)) return true;
+
+            return profile.Ssid.Contains(query, StringComparison.OrdinalIgnoreCase) ||
+                   profile.AuthType.Contains(query, StringComparison.OrdinalIgnoreCase);
         }
 
         private async void LoadNetworks()
         {
             LoadingSpinner.Visibility = Visibility.Visible;
             _allProfiles.Clear();
-            _filteredProfiles.Clear();
 
-            var profiles = await WiFiManager.GetWiFiProfilesAsync();
-            foreach (var p in profiles)
+            try
             {
-                var vm = new WiFiProfileViewModel(p);
-                vm.ShowPassword = _showAllPasswords;
-                _allProfiles.Add(vm);
-            }
-
-            FilterList(SearchBox.Text);
-            MainTitleBar.Title = $"Wi-Fi Show - {_allProfiles.Count} saved networks";
-            LoadingSpinner.Visibility = Visibility.Collapsed;
-        }
-
-        private void FilterList(string query)
-        {
-            _filteredProfiles.Clear();
-            if (string.IsNullOrWhiteSpace(query))
-            {
-                foreach (var p in _allProfiles) _filteredProfiles.Add(p);
-            }
-            else
-            {
-                foreach (var p in _allProfiles.Where(x => x.Ssid.IndexOf(query, StringComparison.OrdinalIgnoreCase) >= 0))
+                var profiles = await WiFiManager.GetWiFiProfilesAsync();
+                foreach (var p in profiles)
                 {
-                    _filteredProfiles.Add(p);
+                    _allProfiles.Add(new WiFiProfileViewModel(p)
+                    {
+                        ShowPassword = _showAllPasswords
+                    });
                 }
+
+                _profilesView.Refresh();
+                MainTitleBar.Title = $"Wi-Fi Show - {_allProfiles.Count} saved networks";
+            }
+            catch (Exception ex)
+            {
+                _snackbarService.Show("Error", $"Failed to load networks: {ex.Message}", ControlAppearance.Danger, new SymbolIcon(SymbolRegular.ErrorCircle24), TimeSpan.FromSeconds(4));
+            }
+            finally
+            {
+                LoadingSpinner.Visibility = Visibility.Collapsed;
             }
         }
 
-        private void SearchBox_TextChanged(object sender, System.Windows.Controls.TextChangedEventArgs e)
+        private void SearchBox_TextChanged(object sender, TextChangedEventArgs e)
         {
-            FilterList(SearchBox.Text);
+            _profilesView.Refresh();
         }
 
         private void ViewToggleBtn_Click(object sender, RoutedEventArgs e)
@@ -148,13 +156,13 @@ namespace WiFiShow.Fluent
             {
                 CardsView.Visibility = Visibility.Collapsed;
                 TableView.Visibility = Visibility.Visible;
-                ViewToggleBtn.Icon = new Wpf.Ui.Controls.SymbolIcon { Symbol = Wpf.Ui.Controls.SymbolRegular.Grid24 };
+                ViewToggleBtn.Icon = new SymbolIcon { Symbol = SymbolRegular.Grid24 };
             }
             else
             {
                 CardsView.Visibility = Visibility.Visible;
                 TableView.Visibility = Visibility.Collapsed;
-                ViewToggleBtn.Icon = new Wpf.Ui.Controls.SymbolIcon { Symbol = Wpf.Ui.Controls.SymbolRegular.List24 };
+                ViewToggleBtn.Icon = new SymbolIcon { Symbol = SymbolRegular.List24 };
             }
         }
 
@@ -162,7 +170,7 @@ namespace WiFiShow.Fluent
         {
             _showAllPasswords = !_showAllPasswords;
             ToggleAllBtn.Content = _showAllPasswords ? "Hide All" : "Show All";
-            ToggleAllBtn.Icon = new Wpf.Ui.Controls.SymbolIcon { Symbol = _showAllPasswords ? Wpf.Ui.Controls.SymbolRegular.EyeOff24 : Wpf.Ui.Controls.SymbolRegular.Eye24 };
+            ToggleAllBtn.Icon = new SymbolIcon { Symbol = _showAllPasswords ? SymbolRegular.EyeOff24 : SymbolRegular.Eye24 };
 
             foreach (var p in _allProfiles)
             {
@@ -175,7 +183,7 @@ namespace WiFiShow.Fluent
             if (sender is Wpf.Ui.Controls.Button btn && btn.Tag is string pwd && !string.IsNullOrEmpty(pwd))
             {
                 System.Windows.Clipboard.SetText(pwd);
-                _snackbarService.Show("Copied", "Password copied to clipboard.", Wpf.Ui.Controls.ControlAppearance.Success, new Wpf.Ui.Controls.SymbolIcon(Wpf.Ui.Controls.SymbolRegular.Copy24), TimeSpan.FromSeconds(2));
+                _snackbarService.Show("Copied", "Password copied to clipboard.", ControlAppearance.Success, new SymbolIcon(SymbolRegular.Copy24), TimeSpan.FromSeconds(2));
             }
         }
 
@@ -214,9 +222,11 @@ namespace WiFiShow.Fluent
 
             if (saveFileDialog.ShowDialog() == true)
             {
-                using (var writer = new StreamWriter(saveFileDialog.FileName, false, Encoding.UTF8))
-                using (var csv = new CsvWriter(writer, CultureInfo.InvariantCulture))
+                try
                 {
+                    using var writer = new StreamWriter(saveFileDialog.FileName, false, Encoding.UTF8);
+                    using var csv = new CsvWriter(writer, CultureInfo.InvariantCulture);
+                    
                     var records = _allProfiles.Select(p => new
                     {
                         p.Name,
@@ -225,16 +235,20 @@ namespace WiFiShow.Fluent
                         p.AuthType,
                         p.IsAutoConnect
                     }).ToList();
-                    
+
                     csv.WriteRecords(records);
+                    _snackbarService.Show("Success", "Exported successfully to CSV.", ControlAppearance.Success, new SymbolIcon(SymbolRegular.Document24), TimeSpan.FromSeconds(3));
                 }
-                _snackbarService.Show("Success", "Exported successfully to CSV.", Wpf.Ui.Controls.ControlAppearance.Success, new Wpf.Ui.Controls.SymbolIcon(Wpf.Ui.Controls.SymbolRegular.Document24), TimeSpan.FromSeconds(3));
+                catch (Exception ex)
+                {
+                    _snackbarService.Show("Export Failed", ex.Message, ControlAppearance.Danger, new SymbolIcon(SymbolRegular.ErrorCircle24), TimeSpan.FromSeconds(4));
+                }
             }
         }
 
         private async void AutoConnectToggle_Click(object sender, RoutedEventArgs e)
         {
-            if (sender is ToggleSwitch ts && ts.Tag is string profileName)
+            if (sender is Wpf.Ui.Controls.ToggleSwitch ts && ts.Tag is string profileName)
             {
                 var profile = _allProfiles.FirstOrDefault(p => p.Name == profileName);
                 if (profile != null)
@@ -242,7 +256,7 @@ namespace WiFiShow.Fluent
                     bool isAuto = ts.IsChecked ?? false;
                     profile.IsAutoConnect = isAuto;
                     await WiFiManager.ToggleAutoConnectAsync(profileName, isAuto);
-                    _snackbarService.Show("Auto-Connect Updated", $"Auto-Connect is now {(isAuto ? "enabled" : "disabled")} for {profileName}.", Wpf.Ui.Controls.ControlAppearance.Secondary, new Wpf.Ui.Controls.SymbolIcon(Wpf.Ui.Controls.SymbolRegular.Globe24), TimeSpan.FromSeconds(2));
+                    _snackbarService.Show("Auto-Connect Updated", $"Auto-Connect is now {(isAuto ? "enabled" : "disabled")} for {profileName}.", ControlAppearance.Secondary, new SymbolIcon(SymbolRegular.Globe24), TimeSpan.FromSeconds(2));
                 }
             }
         }
@@ -251,182 +265,175 @@ namespace WiFiShow.Fluent
         {
             if (sender is Wpf.Ui.Controls.Button btn && btn.Tag is string sortBy)
             {
-                var view = System.Windows.Data.CollectionViewSource.GetDefaultView(_filteredProfiles);
-                
                 if (_lastSortColumn == sortBy)
                 {
-                    _lastSortDirection = _lastSortDirection == System.ComponentModel.ListSortDirection.Ascending 
-                        ? System.ComponentModel.ListSortDirection.Descending 
-                        : System.ComponentModel.ListSortDirection.Ascending;
+                    _lastSortDirection = _lastSortDirection == ListSortDirection.Ascending
+                        ? ListSortDirection.Descending
+                        : ListSortDirection.Ascending;
                 }
                 else
                 {
                     _lastSortColumn = sortBy;
-                    _lastSortDirection = System.ComponentModel.ListSortDirection.Ascending;
+                    _lastSortDirection = ListSortDirection.Ascending;
                 }
 
-                view.SortDescriptions.Clear();
-                view.SortDescriptions.Add(new System.ComponentModel.SortDescription(sortBy, _lastSortDirection));
+                _profilesView.SortDescriptions.Clear();
+                _profilesView.SortDescriptions.Add(new SortDescription(sortBy, _lastSortDirection));
             }
         }
 
         private void QRBtn_Click(object sender, RoutedEventArgs e)
         {
-            if (sender is Wpf.Ui.Controls.Button btn && btn.Tag is string profileName)
+            if (sender is not Wpf.Ui.Controls.Button btn || btn.Tag is not string profileName) return;
+
+            var profile = _allProfiles.FirstOrDefault(p => p.Name == profileName);
+            if (profile == null) return;
+
+            var detailsWindow = new FluentWindow
             {
-                var profile = _allProfiles.FirstOrDefault(p => p.Name == profileName);
-                if (profile == null) return;
+                Title = "QR Code - " + profile.Ssid,
+                Width = 400,
+                Height = 500,
+                WindowStartupLocation = WindowStartupLocation.CenterOwner,
+                Owner = this,
+                WindowBackdropType = WindowBackdropType.Mica,
+                ExtendsContentIntoTitleBar = true,
+                WindowCornerPreference = WindowCornerPreference.Round
+            };
 
-                var detailsWindow = new FluentWindow
+            ApplicationThemeManager.Apply(detailsWindow);
+
+            var grid = new Grid();
+            grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+            grid.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
+
+            var titleBar = new TitleBar { Title = "Scan to Connect" };
+            Grid.SetRow(titleBar, 0);
+            grid.Children.Add(titleBar);
+
+            var sp = new StackPanel { Margin = new Thickness(24), HorizontalAlignment = HorizontalAlignment.Center };
+            Grid.SetRow(sp, 1);
+
+            sp.Children.Add(new System.Windows.Controls.TextBlock { Text = profile.Ssid, FontSize = 20, FontWeight = FontWeights.Bold, Margin = new Thickness(0, 0, 0, 20), HorizontalAlignment = HorizontalAlignment.Center });
+
+            if (!string.IsNullOrEmpty(profile.RealPassword))
+            {
+                string qrPayload = $"WIFI:T:{profile.AuthType};S:{profile.Ssid};P:{profile.RealPassword};;";
+                using var qrGenerator = new QRCodeGenerator();
+                using var qrCodeData = qrGenerator.CreateQrCode(qrPayload, QRCodeGenerator.ECCLevel.Q);
+                using var qrCode = new PngByteQRCode(qrCodeData);
+                byte[] qrBytes = qrCode.GetGraphic(20);
+
+                var bitmapImage = new BitmapImage();
+                using (var ms = new MemoryStream(qrBytes))
                 {
-                    Title = "QR Code - " + profile.Ssid,
-                    Width = 400,
-                    Height = 500,
-                    WindowStartupLocation = WindowStartupLocation.CenterOwner,
-                    Owner = this,
-                    WindowBackdropType = WindowBackdropType.Mica,
-                    ExtendsContentIntoTitleBar = true,
-                    WindowCornerPreference = WindowCornerPreference.Round
+                    bitmapImage.BeginInit();
+                    bitmapImage.CacheOption = BitmapCacheOption.OnLoad;
+                    bitmapImage.StreamSource = ms;
+                    bitmapImage.EndInit();
+                }
+                bitmapImage.Freeze();
+
+                var img = new System.Windows.Controls.Image
+                {
+                    Source = bitmapImage,
+                    Width = 250,
+                    Height = 250,
+                    Margin = new Thickness(0, 0, 0, 20),
+                    HorizontalAlignment = HorizontalAlignment.Center
                 };
-                
-                ApplicationThemeManager.Apply(detailsWindow);
+                sp.Children.Add(img);
 
-                var grid = new System.Windows.Controls.Grid();
-                grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
-                grid.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
+                var actionsSp = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Center };
 
-                var titleBar = new TitleBar { Title = "Scan to Connect" };
-                System.Windows.Controls.Grid.SetRow(titleBar, 0);
-                grid.Children.Add(titleBar);
-
-                var sp = new StackPanel { Margin = new Thickness(24), HorizontalAlignment = HorizontalAlignment.Center };
-                System.Windows.Controls.Grid.SetRow(sp, 1);
-                
-                sp.Children.Add(new System.Windows.Controls.TextBlock { Text = profile.Ssid, FontSize = 20, FontWeight = FontWeights.Bold, Margin = new Thickness(0,0,0,20), HorizontalAlignment = HorizontalAlignment.Center });
-
-                if (!string.IsNullOrEmpty(profile.RealPassword))
+                var btnDownload = new Wpf.Ui.Controls.Button { Content = "Download", Icon = new SymbolIcon(SymbolRegular.Save24), Margin = new Thickness(0, 0, 10, 0) };
+                btnDownload.Click += (s, ev) =>
                 {
-                    string qrPayload = $"WIFI:T:{profile.AuthType};S:{profile.Ssid};P:{profile.RealPassword};;";
-                    var qrGenerator = new QRCodeGenerator();
-                    var qrCodeData = qrGenerator.CreateQrCode(qrPayload, QRCodeGenerator.ECCLevel.Q);
-                    var qrCode = new QRCode(qrCodeData);
-                    var qrImage = qrCode.GetGraphic(8);
-
-                    var img = new System.Windows.Controls.Image
+                    var sfd = new SaveFileDialog { Filter = "PNG Image|*.png", FileName = $"{profile.Ssid}_QR.png" };
+                    if (sfd.ShowDialog() == true)
                     {
-                        Source = BitmapToImageSource(qrImage),
-                        Width = 250,
-                        Height = 250,
-                        Margin = new Thickness(0,0,0,20),
-                        HorizontalAlignment = HorizontalAlignment.Center
-                    };
-                    sp.Children.Add(img);
-                    
-                    var actionsSp = new StackPanel { Orientation = System.Windows.Controls.Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Center };
-                    
-                    var btnDownload = new Wpf.Ui.Controls.Button { Content = "Download", Icon = new Wpf.Ui.Controls.SymbolIcon(Wpf.Ui.Controls.SymbolRegular.Save24), Margin = new Thickness(0,0,10,0) };
-                    btnDownload.Click += (s, ev) => {
-                        var sfd = new SaveFileDialog { Filter = "PNG Image|*.png", FileName = $"{profile.Ssid}_QR.png" };
-                        if (sfd.ShowDialog() == true) {
-                            qrImage.Save(sfd.FileName, System.Drawing.Imaging.ImageFormat.Png);
-                            System.Windows.MessageBox.Show("QR Code saved successfully!", "Wi-Fi Show");
-                        }
-                    };
-                    
-                    var btnShare = new Wpf.Ui.Controls.Button { Content = "Copy Image", Icon = new Wpf.Ui.Controls.SymbolIcon(Wpf.Ui.Controls.SymbolRegular.Copy24) };
-                    btnShare.Click += (s, ev) => {
-                        System.Windows.Clipboard.SetImage((BitmapSource)img.Source);
-                        System.Windows.MessageBox.Show("QR Code image copied to clipboard!", "Wi-Fi Show");
-                    };
+                        File.WriteAllBytes(sfd.FileName, qrBytes);
+                        System.Windows.MessageBox.Show("QR Code saved successfully!", "Wi-Fi Show");
+                    }
+                };
 
-                    actionsSp.Children.Add(btnDownload);
-                    actionsSp.Children.Add(btnShare);
-                    sp.Children.Add(actionsSp);
-                }
-                else
+                var btnShare = new Wpf.Ui.Controls.Button { Content = "Copy Image", Icon = new SymbolIcon(SymbolRegular.Copy24) };
+                btnShare.Click += (s, ev) =>
                 {
-                    sp.Children.Add(new System.Windows.Controls.TextBlock { Text = "No password available for QR code.", HorizontalAlignment = HorizontalAlignment.Center });
-                }
+                    System.Windows.Clipboard.SetImage(bitmapImage);
+                    System.Windows.MessageBox.Show("QR Code image copied to clipboard!", "Wi-Fi Show");
+                };
 
-                grid.Children.Add(sp);
-                detailsWindow.Content = grid;
-                detailsWindow.ShowDialog();
+                actionsSp.Children.Add(btnDownload);
+                actionsSp.Children.Add(btnShare);
+                sp.Children.Add(actionsSp);
             }
+            else
+            {
+                sp.Children.Add(new System.Windows.Controls.TextBlock { Text = "No password available for QR code.", HorizontalAlignment = HorizontalAlignment.Center });
+            }
+
+            grid.Children.Add(sp);
+            detailsWindow.Content = grid;
+            detailsWindow.ShowDialog();
         }
 
         private async void DetailsBtn_Click(object sender, RoutedEventArgs e)
         {
-            if (sender is Wpf.Ui.Controls.Button btn && btn.Tag is string profileName)
+            if (sender is not Wpf.Ui.Controls.Button btn || btn.Tag is not string profileName) return;
+
+            var profile = _allProfiles.FirstOrDefault(p => p.Name == profileName);
+            if (profile == null) return;
+
+            string detailsText = await WiFiManager.GetProfileDetailsAsync(profileName);
+
+            var detailsWindow = new FluentWindow
             {
-                var profile = _allProfiles.FirstOrDefault(p => p.Name == profileName);
-                if (profile == null) return;
+                Title = "Profile Details - " + profile.Ssid,
+                Width = 600,
+                Height = 600,
+                WindowStartupLocation = WindowStartupLocation.CenterOwner,
+                Owner = this,
+                WindowBackdropType = WindowBackdropType.Mica,
+                ExtendsContentIntoTitleBar = true,
+                WindowCornerPreference = WindowCornerPreference.Round
+            };
 
-                string detailsText = await WiFiManager.GetProfileDetailsAsync(profileName);
-                
-                var detailsWindow = new FluentWindow
-                {
-                    Title = "Profile Details - " + profile.Ssid,
-                    Width = 600,
-                    Height = 600,
-                    WindowStartupLocation = WindowStartupLocation.CenterOwner,
-                    Owner = this,
-                    WindowBackdropType = WindowBackdropType.Mica,
-                    ExtendsContentIntoTitleBar = true,
-                    WindowCornerPreference = WindowCornerPreference.Round
-                };
-                
-                ApplicationThemeManager.Apply(detailsWindow);
+            ApplicationThemeManager.Apply(detailsWindow);
 
-                var grid = new System.Windows.Controls.Grid();
-                grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
-                grid.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
+            var grid = new Grid();
+            grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+            grid.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
 
-                var titleBar = new TitleBar { Title = "Details" };
-                System.Windows.Controls.Grid.SetRow(titleBar, 0);
-                grid.Children.Add(titleBar);
+            var titleBar = new TitleBar { Title = "Details" };
+            Grid.SetRow(titleBar, 0);
+            grid.Children.Add(titleBar);
 
-                var sp = new StackPanel { Margin = new Thickness(24) };
-                System.Windows.Controls.Grid.SetRow(sp, 1);
-                
-                sp.Children.Add(new System.Windows.Controls.TextBlock { Text = profile.Ssid, FontSize = 20, FontWeight = FontWeights.Bold, Margin = new Thickness(0,0,0,10) });
+            var sp = new StackPanel { Margin = new Thickness(24) };
+            Grid.SetRow(sp, 1);
 
-                sp.Children.Add(new ScrollViewer
-                {
-                    Content = new System.Windows.Controls.TextBlock { Text = detailsText, FontFamily = new System.Windows.Media.FontFamily("Consolas"), FontSize = 12 }
-                });
+            sp.Children.Add(new System.Windows.Controls.TextBlock { Text = profile.Ssid, FontSize = 20, FontWeight = FontWeights.Bold, Margin = new Thickness(0, 0, 0, 10) });
 
-                grid.Children.Add(sp);
-                detailsWindow.Content = grid;
-                detailsWindow.ShowDialog();
-            }
-        }
-
-        private BitmapImage BitmapToImageSource(Bitmap bitmap)
-        {
-            using (MemoryStream memory = new MemoryStream())
+            sp.Children.Add(new ScrollViewer
             {
-                bitmap.Save(memory, System.Drawing.Imaging.ImageFormat.Bmp);
-                memory.Position = 0;
-                BitmapImage bitmapimage = new BitmapImage();
-                bitmapimage.BeginInit();
-                bitmapimage.StreamSource = memory;
-                bitmapimage.CacheOption = BitmapCacheOption.OnLoad;
-                bitmapimage.EndInit();
-                return bitmapimage;
-            }
+                Content = new System.Windows.Controls.TextBlock { Text = detailsText, FontFamily = new System.Windows.Media.FontFamily("Consolas"), FontSize = 12 }
+            });
+
+            grid.Children.Add(sp);
+            detailsWindow.Content = grid;
+            detailsWindow.ShowDialog();
         }
 
         private async void DeleteBtn_Click(object sender, RoutedEventArgs e)
         {
-            if (sender is Wpf.Ui.Controls.Button btn && btn.Tag is string profileName)
+            if (sender is not Wpf.Ui.Controls.Button btn || btn.Tag is not string profileName) return;
+
+            var result = System.Windows.MessageBox.Show($"Are you sure you want to forget '{profileName}'?", "Confirm Delete", System.Windows.MessageBoxButton.YesNo, MessageBoxImage.Warning);
+            if (result == System.Windows.MessageBoxResult.Yes)
             {
-                var result = System.Windows.MessageBox.Show($"Are you sure you want to forget '{profileName}'?", "Confirm Delete", System.Windows.MessageBoxButton.YesNo, MessageBoxImage.Warning);
-                if (result == System.Windows.MessageBoxResult.Yes)
-                {
-                    await WiFiManager.DeleteProfileAsync(profileName);
-                    LoadNetworks();
-                    _snackbarService.Show("Deleted", $"Forgot network {profileName}.", Wpf.Ui.Controls.ControlAppearance.Danger, new Wpf.Ui.Controls.SymbolIcon(Wpf.Ui.Controls.SymbolRegular.Delete24), TimeSpan.FromSeconds(3));
-                }
+                await WiFiManager.DeleteProfileAsync(profileName);
+                LoadNetworks();
+                _snackbarService.Show("Deleted", $"Forgot network {profileName}.", ControlAppearance.Danger, new SymbolIcon(SymbolRegular.Delete24), TimeSpan.FromSeconds(3));
             }
         }
     }

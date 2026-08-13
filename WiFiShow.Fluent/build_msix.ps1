@@ -8,7 +8,7 @@ if (Test-Path "MsixPackage") { Remove-Item -Recurse -Force "MsixPackage" }
 New-Item -ItemType Directory "MsixPackage\Assets" | Out-Null
 
 # Copy binaries
-Copy-Item "bin\Release\net481\*" "MsixPackage\" -Recurse -Force
+Copy-Item "bin\Release\net10.0-windows\*" "MsixPackage\" -Recurse -Force
 
 # Generate Images
 Add-Type -AssemblyName System.Drawing
@@ -52,7 +52,7 @@ $manifest = @"
   
   <Identity Name="AshishVishwakarma.WiFiShow"
     Publisher="CN=Ashish Vishwakarma"
-    Version="2.1.0.0" 
+    Version="2.2.0.0" 
     ProcessorArchitecture="x64" />
     
   <Properties>
