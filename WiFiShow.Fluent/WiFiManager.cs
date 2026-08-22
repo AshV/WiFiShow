@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.Eventing.Reader;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
@@ -16,6 +17,8 @@ namespace WiFiShow.Fluent
         public string AuthType { get; set; } = string.Empty;
         public bool IsAutoConnect { get; set; }
         public string ConnectionMode { get; set; } = string.Empty;
+        public bool IsConnected { get; set; }
+        public DateTime? LastConnectedTime { get; set; }
     }
 
     public static class WiFiManager
@@ -202,16 +205,134 @@ namespace WiFiShow.Fluent
                 catch
                 {
                     // Fallback to netsh if native API fails
-                    return GetWiFiProfilesNetshFallback();
+                    profiles = GetWiFiProfilesNetshFallback();
                 }
 
                 if (profiles.Count == 0)
                 {
-                    return GetWiFiProfilesNetshFallback();
+                    profiles = GetWiFiProfilesNetshFallback();
                 }
 
+                EnrichAndSortProfiles(profiles);
                 return profiles;
             });
+        }
+
+        private static void EnrichAndSortProfiles(List<WiFiProfile> profiles)
+        {
+            try
+            {
+                string? connectedProfile = GetCurrentlyConnectedProfileName();
+                var lastConnectedMap = GetLastConnectedHistory();
+
+                foreach (var profile in profiles)
+                {
+                    if (!string.IsNullOrEmpty(connectedProfile) &&
+                        (string.Equals(profile.Name, connectedProfile, StringComparison.OrdinalIgnoreCase) ||
+                         string.Equals(profile.Ssid, connectedProfile, StringComparison.OrdinalIgnoreCase)))
+                    {
+                        profile.IsConnected = true;
+                    }
+
+                    if (lastConnectedMap.TryGetValue(profile.Name, out DateTime lastTime) ||
+                        lastConnectedMap.TryGetValue(profile.Ssid, out lastTime))
+                    {
+                        profile.LastConnectedTime = lastTime;
+                    }
+                }
+
+                // Sort: Currently connected first, then by LastConnectedTime descending, then alphabetical
+                profiles.Sort((a, b) =>
+                {
+                    if (a.IsConnected != b.IsConnected)
+                        return b.IsConnected.CompareTo(a.IsConnected);
+
+                    if (a.LastConnectedTime.HasValue && b.LastConnectedTime.HasValue)
+                        return b.LastConnectedTime.Value.CompareTo(a.LastConnectedTime.Value);
+
+                    if (a.LastConnectedTime.HasValue)
+                        return -1;
+
+                    if (b.LastConnectedTime.HasValue)
+                        return 1;
+
+                    return string.Compare(a.Ssid, b.Ssid, StringComparison.OrdinalIgnoreCase);
+                });
+            }
+            catch { }
+        }
+
+        public static string? GetCurrentlyConnectedProfileName()
+        {
+            try
+            {
+                string output = RunCommand("netsh", "wlan show interfaces");
+                using var reader = new StringReader(output);
+                string? line;
+                string? state = null;
+                string? profile = null;
+                while ((line = reader.ReadLine()) != null)
+                {
+                    var parts = line.Split(':', 2);
+                    if (parts.Length == 2)
+                    {
+                        string key = parts[0].Trim();
+                        string val = parts[1].Trim();
+                        if (key.Equals("State", StringComparison.OrdinalIgnoreCase))
+                            state = val;
+                        else if (key.Equals("Profile", StringComparison.OrdinalIgnoreCase))
+                            profile = val;
+                    }
+                }
+
+                if (string.Equals(state, "connected", StringComparison.OrdinalIgnoreCase) && !string.IsNullOrEmpty(profile))
+                {
+                    return profile;
+                }
+            }
+            catch { }
+            return null;
+        }
+
+        public static Dictionary<string, DateTime> GetLastConnectedHistory()
+        {
+            var history = new Dictionary<string, DateTime>(StringComparer.OrdinalIgnoreCase);
+            try
+            {
+                string query = "*[System[(EventID=8001)]]";
+                var eventQuery = new EventLogQuery("Microsoft-Windows-WLAN-AutoConfig/Operational", PathType.LogName, query)
+                {
+                    ReverseDirection = true
+                };
+
+                using var reader = new EventLogReader(eventQuery);
+                EventRecord? record;
+                int count = 0;
+                while ((record = reader.ReadEvent()) != null && count < 500)
+                {
+                    using (record)
+                    {
+                        count++;
+                        if (record.TimeCreated.HasValue && record.Properties != null && record.Properties.Count > 4)
+                        {
+                            string? profileName = record.Properties[3]?.Value?.ToString();
+                            string? ssid = record.Properties[4]?.Value?.ToString();
+                            DateTime time = record.TimeCreated.Value;
+
+                            if (!string.IsNullOrEmpty(profileName) && !history.ContainsKey(profileName))
+                            {
+                                history[profileName] = time;
+                            }
+                            if (!string.IsNullOrEmpty(ssid) && !history.ContainsKey(ssid))
+                            {
+                                history[ssid] = time;
+                            }
+                        }
+                    }
+                }
+            }
+            catch { }
+            return history;
         }
 
         private static WiFiProfile? ParseProfileXml(string xmlContent, string fallbackName)

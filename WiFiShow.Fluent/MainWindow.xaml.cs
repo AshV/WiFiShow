@@ -33,6 +33,46 @@ namespace WiFiShow.Fluent
         public string Ssid => _profile.Ssid;
         public string RealPassword => _profile.Password;
         public string AuthType => _profile.AuthType;
+        public bool IsConnected => _profile.IsConnected;
+        public DateTime? LastConnectedTime => _profile.LastConnectedTime;
+
+        public string LastConnectedDisplay
+        {
+            get
+            {
+                if (IsConnected)
+                    return "Connected";
+
+                if (!_profile.LastConnectedTime.HasValue)
+                    return "Never / Unknown";
+
+                var time = _profile.LastConnectedTime.Value.ToLocalTime();
+                var now = DateTime.Now;
+
+                if (time.Date == now.Date)
+                    return $"Today, {time:t}";
+                if (time.Date == now.Date.AddDays(-1))
+                    return $"Yesterday, {time:t}";
+                if ((now - time).TotalDays < 7)
+                    return $"{time:ddd}, {time:t}";
+                if (time.Year == now.Year)
+                    return $"{time:MMM d}, {time:t}";
+
+                return $"{time:MMM d, yyyy}";
+            }
+        }
+
+        public long LastConnectedSortKey
+        {
+            get
+            {
+                if (IsConnected)
+                    return long.MaxValue;
+                if (_profile.LastConnectedTime.HasValue)
+                    return _profile.LastConnectedTime.Value.Ticks;
+                return 0;
+            }
+        }
 
         public bool IsAutoConnect
         {
@@ -113,7 +153,9 @@ namespace WiFiShow.Fluent
             if (string.IsNullOrWhiteSpace(query)) return true;
 
             return profile.Ssid.Contains(query, StringComparison.OrdinalIgnoreCase) ||
-                   profile.AuthType.Contains(query, StringComparison.OrdinalIgnoreCase);
+                   profile.AuthType.Contains(query, StringComparison.OrdinalIgnoreCase) ||
+                   (profile.IsConnected && "connected".Contains(query, StringComparison.OrdinalIgnoreCase)) ||
+                   profile.LastConnectedDisplay.Contains(query, StringComparison.OrdinalIgnoreCase);
         }
 
         private async void LoadNetworks()
@@ -233,7 +275,9 @@ namespace WiFiShow.Fluent
                         p.Ssid,
                         Password = p.RealPassword,
                         p.AuthType,
-                        p.IsAutoConnect
+                        p.IsAutoConnect,
+                        Status = p.IsConnected ? "Connected" : "Disconnected",
+                        LastConnected = p.LastConnectedDisplay
                     }).ToList();
 
                     csv.WriteRecords(records);
@@ -274,7 +318,9 @@ namespace WiFiShow.Fluent
                 else
                 {
                     _lastSortColumn = sortBy;
-                    _lastSortDirection = ListSortDirection.Ascending;
+                    _lastSortDirection = sortBy == nameof(WiFiProfileViewModel.LastConnectedSortKey)
+                        ? ListSortDirection.Descending
+                        : ListSortDirection.Ascending;
                 }
 
                 _profilesView.SortDescriptions.Clear();
